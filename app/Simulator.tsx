@@ -358,6 +358,7 @@ export default function Simulator() {
               <button
                 type="button"
                 onClick={() => setExtrasOpen((o) => !o)}
+                aria-expanded={extrasOpen}
                 className="flex w-full items-center justify-between px-4 py-3 text-left"
               >
                 <span>
@@ -459,6 +460,7 @@ export default function Simulator() {
               <select
                 value={destCountry}
                 onChange={(e) => pickCountry(e.target.value)}
+                aria-label="Destination country"
                 className="mt-1.5 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm focus:border-[#b25c72] focus:outline-none focus:ring-2 focus:ring-[#b25c72]/30"
               >
                 {DESTINATION_COUNTRIES.map((c) => {
@@ -480,12 +482,16 @@ export default function Simulator() {
                 housing={housing}
               />
             </div>
+            <p className="mt-1.5 text-xs text-zinc-400">
+              Prices are indicative, not live — and we list selected areas, not every suburb yet.
+            </p>
 
             <input
               type="text"
               value={areaQuery}
               onChange={(e) => setAreaQuery(e.target.value)}
               placeholder="Search a suburb or city…"
+              aria-label="Search a suburb or city"
               className="mt-2 w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm focus:border-[#b25c72] focus:outline-none focus:ring-2 focus:ring-[#b25c72]/30"
             />
 
@@ -705,7 +711,7 @@ function Results({
       }
       setSaveState("done");
     } catch {
-      setSaveState("done");
+      setSaveState("error");
     }
   }
 
@@ -1030,17 +1036,20 @@ function Results({
             </p>
           </div>
 
-          {/* Lead capture */}
+          {/* Notify signup */}
           <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
             {saveState === "done" ? (
               <p className="text-sm font-medium text-emerald-700">
-                Saved. We&apos;ll send your plan and a heads-up as we add more. 💛
+                You&apos;re on the list 💛 We&apos;ll let you know as GetCloser grows.
               </p>
             ) : (
               <form onSubmit={handleSave}>
-                <label className="block text-sm font-medium text-zinc-700">Email me this plan</label>
+                <label htmlFor="notify-email" className="block text-sm font-medium text-zinc-700">
+                  Get an email as we add features
+                </label>
                 <div className="mt-2 flex gap-2">
                   <input
+                    id="notify-email"
                     type="email"
                     required
                     value={email}
@@ -1053,10 +1062,14 @@ function Results({
                     disabled={saveState === "saving"}
                     className="shrink-0 rounded-xl bg-[#b25c72] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#9c4a60] disabled:opacity-60"
                   >
-                    {saveState === "saving" ? "…" : "Save plan"}
+                    {saveState === "saving" ? "…" : "Notify me"}
                   </button>
                 </div>
-                <p className="mt-2 text-xs text-zinc-400">No spam. Just your numbers and what we build next.</p>
+                <p className="mt-2 text-xs text-zinc-400">
+                  {saveState === "error"
+                    ? "Couldn't save that just now — give it another go?"
+                    : "No spam — just the occasional update as we build."}
+                </p>
               </form>
             )}
           </div>
@@ -1127,8 +1140,9 @@ function Results({
 
         <footer className="mt-10 text-xs text-zinc-400">
           Figures are indicative local medians for a two-bedroom place and typical living costs,
-          shown in {a.currency}. Visa and tax assumptions are rough and not advice — a starting point
-          for the conversation, not financial or immigration advice.
+          shown in {a.currency} — not live data. Visa, stamp duty and mortgage assumptions are rough
+          global estimates. This is a starting point for the conversation, not financial or
+          immigration advice.
         </footer>
       </div>
     </main>
@@ -1245,11 +1259,13 @@ function NumberInput({
   onValue,
   className,
   placeholder,
+  ariaLabel,
 }: {
   value: number;
   onValue: (n: number) => void;
   className?: string;
   placeholder?: string;
+  ariaLabel?: string;
 }) {
   const [text, setText] = useState(value ? String(value) : "");
   useEffect(() => {
@@ -1261,6 +1277,7 @@ function NumberInput({
     <input
       type="text"
       inputMode="numeric"
+      aria-label={ariaLabel}
       value={text}
       placeholder={placeholder}
       onChange={(e) => {
@@ -1304,7 +1321,14 @@ function ToggleRow({
 }) {
   return (
     <div>
-      <button type="button" onClick={onToggle} className="flex w-full items-center justify-between gap-3 text-left">
+      <button
+        type="button"
+        onClick={onToggle}
+        role="switch"
+        aria-checked={on}
+        aria-label={title}
+        className="flex w-full items-center justify-between gap-3 text-left"
+      >
         <span>
           <span className="block text-sm font-medium text-zinc-700">{title}</span>
           <span className="block text-xs text-zinc-500">{hint}</span>
@@ -1375,6 +1399,7 @@ function EditableCost({
         <NumberInput
           value={line.amount}
           onValue={(v) => onAmount(line, v)}
+          ariaLabel={`${line.label || "Custom"} monthly amount`}
           className="w-24 rounded-md border border-zinc-200 bg-white px-2 py-1 text-right text-sm font-medium tabular-nums focus:border-[#b25c72] focus:outline-none focus:ring-1 focus:ring-[#b25c72]/30"
         />
         {line.custom && (
@@ -1414,11 +1439,13 @@ function MoneyField({
         <NumberInput
           value={value}
           onValue={onValue}
+          ariaLabel={`${who} take-home pay`}
           className="w-40 rounded-xl border border-zinc-300 px-3 py-2.5 text-sm focus:border-[#b25c72] focus:outline-none focus:ring-2 focus:ring-[#b25c72]/30"
         />
         <select
           value={currency}
           onChange={(e) => onCurrency(e.target.value)}
+          aria-label="Pay currency"
           className="rounded-xl border border-zinc-300 bg-white px-2.5 py-2.5 text-sm font-medium focus:border-[#b25c72] focus:outline-none focus:ring-2 focus:ring-[#b25c72]/30"
         >
           {CURRENCY_OPTIONS.map((c) => (
@@ -1469,6 +1496,7 @@ function PersonCard({
               const country = e.target.value;
               onLocation({ country, state: country === "AU" ? location.state || "SA" : "" });
             }}
+            aria-label={`${name || defaultName} country`}
             className={selectClass}
           >
             {REGION_ORDER.map((region) => (
@@ -1489,6 +1517,7 @@ function PersonCard({
             <select
               value={location.state}
               onChange={(e) => onLocation({ ...location, state: e.target.value })}
+              aria-label={`${name || defaultName} state`}
               className={selectClass}
             >
               {AU_STATES.map((s) => (

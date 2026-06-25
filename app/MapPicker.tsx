@@ -49,6 +49,7 @@ export default function MapPicker({
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
   const prevSelRef = useRef<string | null>(null);
+  const prevCountryRef = useRef<string | null>(null);
   const [ready, setReady] = useState(false);
 
   // Init once. All pins are native map layers, so they're drawn on the GPU in
@@ -182,7 +183,9 @@ export default function MapPicker({
     });
   }, [areas, housing, ready]);
 
-  // Reflect the selected area via feature-state (no re-render of pins).
+  // Reflect the selected area via feature-state, and pan to it when it's picked
+  // from the list/search (but not on first load or a country switch, where the
+  // fit-to-country should win).
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
@@ -191,7 +194,17 @@ export default function MapPicker({
     }
     if (selectedId) map.setFeatureState({ source: "areas", id: selectedId }, { selected: true });
     prevSelRef.current = selectedId;
-  }, [selectedId, ready]);
+
+    const area = areas.find((a) => a.id === selectedId);
+    if (area) {
+      const firstRun = prevCountryRef.current === null;
+      const countryChanged = !firstRun && prevCountryRef.current !== area.country;
+      if (!firstRun && !countryChanged) {
+        map.easeTo({ center: [area.lng, area.lat], zoom: Math.max(map.getZoom(), 9), duration: 600 });
+      }
+      prevCountryRef.current = area.country;
+    }
+  }, [selectedId, ready, areas]);
 
   if (!TOKEN) {
     return (
@@ -206,6 +219,8 @@ export default function MapPicker({
   return (
     <div
       ref={containerRef}
+      role="application"
+      aria-label="Map of areas — pick a place"
       className="mb-4 h-72 w-full overflow-hidden rounded-2xl border border-zinc-200"
     />
   );
