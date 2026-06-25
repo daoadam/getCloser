@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GetCloser
 
-## Getting Started
+**A single-screen simulator that tells a couple living apart if, and where, they can afford to move in together.**
 
-First, run the development server:
+Built for Australian domestic long-distance couples. Drag your real numbers and instantly see what closing the gap costs — the verdict, the monthly money, the upfront cost to actually move in, and a teased glimpse of the future.
+
+## Why this and not another couples app
+
+Most "LDR apps" sell emotional connection (daily questions, countdown widgets) — the thing couples already get for free. GetCloser owns the **logistics layer** nobody builds: the money-and-location decision of actually moving in. It's a *flow-market* tool (like TurboTax) — used hard at one life moment, found via search, not a daily-engagement app.
+
+Scope is deliberately tight:
+- **Hook (built):** combined money + area prices + "can you afford to move in, and where" verdict.
+- **Dream (teased only):** 5/10-year picture, buying a place, kids.
+- **Out of scope:** international visas, login, social features.
+
+## Stack
+
+- **Next.js 16** (App Router, Turbopack) + React 19
+- **Tailwind CSS v4**
+- **Supabase** — optional lead capture (`save / email my plan`)
+
+The simulator runs **fully client-side** with no backend required. Supabase only powers saving scenarios + email capture, and degrades gracefully when unconfigured.
+
+## Run locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Supabase (optional)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Create a project at [supabase.com](https://supabase.com).
+2. Run [`supabase/schema.sql`](supabase/schema.sql) in the SQL editor.
+3. Copy `.env.local.example` → `.env.local` and fill in the URL + anon key.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Code map
 
-## Learn More
+| File | Purpose |
+|------|---------|
+| `lib/areas.ts` | Indicative AU rent + cost-of-living dataset (Adelaide suburb-level + capitals) |
+| `lib/calc.ts` | The simulation math — costs, leftover, upfront, verdict, future preview |
+| `app/Simulator.tsx` | The one-screen interactive UI |
+| `lib/supabase/client.ts` | Optional browser Supabase client |
+| `supabase/schema.sql` | `scenarios` lead-capture table + RLS |
 
-To learn more about Next.js, take a look at the following resources:
+## Notes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Cost figures are indicative Australian medians for a two-bedroom place — a starting point for the conversation, not financial advice. Replace with live data (e.g. SQM Research / CoreLogic feeds) before going to market.
