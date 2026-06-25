@@ -481,8 +481,8 @@ export default function Simulator() {
               value={savings}
               onChange={setSavings}
               min={0}
-              max={60000}
-              step={500}
+              max={100000}
+              step={1000}
             />
             <Slider
               label="Monthly debt repayments (together)"
