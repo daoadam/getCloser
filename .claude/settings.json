@@ -2,7 +2,21 @@
   "permissions": {
     "allow": [
       "Bash(npm --version)",
-      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --use-npm --turbopack --yes)"
+      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --use-npm --turbopack --yes)",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(npm run *)",
+      "Bash(echo \"started, pid $!\")",
+      "Bash(curl -sf http://localhost:3000 -o /dev/null)",
+      "Bash(break)",
+      "Read(//tmp/**)",
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "Read(//a/VanessasBooks/.claude//**)",
+      "Read(//a/VanessasBooks/.claude/**)",
+      "mcp__plugin_playwright_playwright__browser_click"
     ]
   }
 }
