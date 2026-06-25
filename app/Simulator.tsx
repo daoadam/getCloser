@@ -40,10 +40,12 @@ const VERDICT_COPY = {
   },
 } as const;
 
+// Pip stays encouraging — happy when it's easy, hopeful-thinking otherwise.
+// Never sad.
 const VERDICT_MOOD: Record<"comfortable" | "tight" | "not-yet", Mood> = {
   comfortable: "happy",
   tight: "think",
-  "not-yet": "worry",
+  "not-yet": "think",
 };
 
 const HORIZONS = [1, 5, 10];
@@ -86,6 +88,7 @@ export default function Simulator() {
   const [lifestyle, setLifestyle] = useState<Lifestyle>("comfortable");
   const [kids, setKids] = useState(0);
   const [horizon, setHorizon] = useState(5);
+  const [moveInDate, setMoveInDate] = useState("");
 
   const [email, setEmail] = useState("");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "done" | "error">("idle");
@@ -94,11 +97,58 @@ export default function Simulator() {
   const [costOverrides, setCostOverrides] = useState<Record<string, number>>({});
   const [extraCosts, setExtraCosts] = useState<{ id: string; label: string; amount: number }[]>([]);
   const extraIdRef = useRef(0);
+  // Skip the next place-change reset once (used when restoring a shared link).
+  const skipClearRef = useRef(false);
   // Edits are tied to the chosen place/currency — reset them if it changes.
   useEffect(() => {
+    if (skipClearRef.current) {
+      skipClearRef.current = false;
+      return;
+    }
     setCostOverrides({});
     setExtraCosts([]);
   }, [areaId, housing]);
+
+  // Restore a scenario shared via #s=… link (read + edit your own copy).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const m = window.location.hash.match(/^#s=(.+)$/);
+    if (!m) return;
+    try {
+      const o = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+      if (o.v !== 1) return;
+      skipClearRef.current = true;
+      setYourName(o.yourName ?? "");
+      setPartnerName(o.partnerName ?? "");
+      setLocationA(o.locationA);
+      setLocationB(o.locationB);
+      setIncomeLocalA(o.incomeLocalA);
+      setIncomeLocalB(o.incomeLocalB);
+      setSavings(o.savings);
+      setMonthlyDebts(o.monthlyDebts);
+      setDestCountry(o.destCountry);
+      setAreaId(o.areaId);
+      setHousing(o.housing);
+      setTransitionMonths(o.transitionMonths);
+      setVisitsPerYear(o.visitsPerYear);
+      setLifestyle(o.lifestyle);
+      setKids(o.kids);
+      setEmergencyOn(o.emergencyOn);
+      setEmergencyMonths(o.emergencyMonths);
+      setPetsOn(o.petsOn);
+      setPetRelocation(o.petRelocation);
+      setTransferOn(o.transferOn);
+      setTransferFeePct(o.transferFeePct);
+      setCostOverrides(o.costOverrides ?? {});
+      setExtraCosts(o.extraCosts ?? []);
+      setMoveInDate(o.moveInDate ?? "");
+      setStep(RESULTS_STEP);
+      window.history.replaceState(null, "", window.location.pathname);
+    } catch {
+      /* ignore a bad link */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { rates, live: ratesLive } = useRates();
 
@@ -164,6 +214,95 @@ export default function Simulator() {
       .sort((a, b) => b.leftover - a.leftover);
   }, [baseInput, area]);
 
+  // Pip's ideas: three quick what-ifs that change one lever of the plan.
+  const altScenarios = useMemo(() => {
+    const c = area.currency;
+    const list: { key: string; emoji: string; title: string; sub: string; apply: () => void }[] = [];
+
+    if (lifestyle !== "frugal") {
+      const r = simulate({ ...baseInput, area, displayCurrency: c, lifestyle: "frugal" });
+      const gain = r.leftover - result.leftover;
+      if (gain > 0)
+        list.push({
+          key: "lean",
+          emoji: "🌱",
+          title: "Live leaner",
+          sub: `+${fmt(gain, c)}/mo spare`,
+          apply: () => setLifestyle("frugal"),
+        });
+    }
+
+    const inCountry = AREAS_BY_COUNTRY[destCountry] ?? [];
+    const cheapest = [...inCountry].sort((a, b) =>
+      housing === "buy" ? a.medianHouse - b.medianHouse : a.weeklyRent2br - b.weeklyRent2br
+    )[0];
+    if (cheapest && cheapest.id !== areaId) {
+      const r = simulate({ ...baseInput, area: cheapest, displayCurrency: cheapest.currency });
+      list.push({
+        key: "cheap",
+        emoji: "📍",
+        title: `Try ${cheapest.city}`,
+        sub: `${fmt(r.upfront, cheapest.currency)} to move`,
+        apply: () => setAreaId(cheapest.id),
+      });
+    }
+
+    const other: Housing = housing === "buy" ? "rent" : "buy";
+    const r3 = simulate({ ...baseInput, area, displayCurrency: c, housing: other });
+    list.push({
+      key: "flip",
+      emoji: other === "buy" ? "🔑" : "🏠",
+      title: other === "buy" ? "Buy instead" : "Rent instead",
+      sub: `${fmt(r3.upfront, c)} upfront`,
+      apply: () => setHousing(other),
+    });
+
+    return list.slice(0, 3);
+  }, [baseInput, area, result, lifestyle, housing, destCountry, areaId]);
+
+  // A shareable link with the whole scenario encoded — no backend needed.
+  const shareUrl = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      const o = {
+        v: 1,
+        yourName,
+        partnerName,
+        locationA,
+        locationB,
+        incomeLocalA,
+        incomeLocalB,
+        savings,
+        monthlyDebts,
+        destCountry,
+        areaId,
+        housing,
+        transitionMonths,
+        visitsPerYear,
+        lifestyle,
+        kids,
+        emergencyOn,
+        emergencyMonths,
+        petsOn,
+        petRelocation,
+        transferOn,
+        transferFeePct,
+        costOverrides,
+        extraCosts,
+        moveInDate,
+      };
+      const enc = btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+      return `${window.location.origin}${window.location.pathname}#s=${enc}`;
+    } catch {
+      return "";
+    }
+  }, [
+    yourName, partnerName, locationA, locationB, incomeLocalA, incomeLocalB, savings, monthlyDebts,
+    destCountry, areaId, housing, transitionMonths, visitsPerYear, lifestyle, kids, emergencyOn,
+    emergencyMonths, petsOn, petRelocation, transferOn, transferFeePct, costOverrides, extraCosts,
+    moveInDate,
+  ]);
+
   const next = () => setStep((s) => Math.min(s + 1, RESULTS_STEP));
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
@@ -183,6 +322,10 @@ export default function Simulator() {
         kids={kids}
         result={result}
         comparisons={comparisons}
+        altScenarios={altScenarios}
+        shareUrl={shareUrl}
+        moveInDate={moveInDate}
+        setMoveInDate={setMoveInDate}
         edited={Object.keys(costOverrides).length > 0 || extraCosts.length > 0}
         onCostAmount={(line, v) =>
           line.custom
@@ -640,6 +783,10 @@ function Results({
   kids,
   result,
   comparisons,
+  altScenarios,
+  shareUrl,
+  moveInDate,
+  setMoveInDate,
   edited,
   onCostAmount,
   onCostLabel,
@@ -662,6 +809,10 @@ function Results({
   kids: number;
   result: ReturnType<typeof simulate>;
   comparisons: Comparison[];
+  altScenarios: { key: string; emoji: string; title: string; sub: string; apply: () => void }[];
+  shareUrl: string;
+  moveInDate: string;
+  setMoveInDate: (s: string) => void;
   edited: boolean;
   onCostAmount: (line: CostLine, amount: number) => void;
   onCostLabel: (id: string, label: string) => void;
@@ -688,6 +839,7 @@ function Results({
     names.yourName && names.partnerName
       ? `${names.yourName} & ${names.partnerName}`
       : names.yourName || "The two of you";
+  const [copied, setCopied] = useState(false);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -723,12 +875,26 @@ function Results({
             <HeartGap />
             <span className="font-display text-xl font-semibold tracking-tight">GetCloser</span>
           </div>
-          <div className="flex gap-2 text-sm">
+          <div className="flex items-center gap-2 text-sm">
+            <button
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(shareUrl);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                } catch {
+                  /* clipboard blocked */
+                }
+              }}
+              className="rounded-lg bg-[#b25c72] px-3 py-1.5 font-semibold text-white transition hover:bg-[#9c4a60]"
+            >
+              {copied ? "Link copied 💛" : "Share"}
+            </button>
             <button onClick={onTweak} className="rounded-lg px-3 py-1.5 font-medium text-zinc-600 hover:bg-zinc-100">
-              Tweak numbers
+              Tweak
             </button>
             <button onClick={onRestart} className="rounded-lg px-3 py-1.5 font-medium text-zinc-400 hover:bg-zinc-100">
-              Start over
+              Restart
             </button>
           </div>
         </div>
@@ -738,35 +904,53 @@ function Results({
         </p>
 
         <div className="step-in mt-3 flex flex-col gap-5">
-          {/* Verdict */}
-          <div className={`flex items-center gap-4 rounded-3xl border p-6 ${verdict.tone}`}>
-            <div className="shrink-0">
-              <Mascot mood={VERDICT_MOOD[result.verdict]} size={84} />
-            </div>
-            <div>
-              <p className="font-display text-[1.7rem] font-semibold leading-tight">{verdict.badge}</p>
-              <p className="mt-2 text-sm opacity-80">
-                {result.leftover >= 0
-                  ? `Around ${fmt(result.leftover, cur)} left over each month after the basics.`
-                  : `You'd be short about ${fmt(Math.abs(result.leftover), cur)} a month here.`}
-              </p>
-            </div>
-          </div>
+          {/* The journey — your road to closing the distance */}
+          <Journey
+            result={result}
+            cur={cur}
+            moveInDate={moveInDate}
+            setMoveInDate={setMoveInDate}
+          />
 
-          {/* Headline numbers */}
-          <div className="grid grid-cols-3 gap-3">
-            <Stat label="Left over /mo" value={fmt(result.leftover, cur)} good={result.leftover >= 0} />
-            <Stat label="To move in" value={fmt(result.upfront, cur)} />
-            <Stat
-              label="Until you move"
-              value={result.monthsToMoveIn === null ? "—" : `${result.monthsToMoveIn} mo`}
-            />
+          {/* Pip's ideas — quick what-ifs */}
+          {altScenarios.length > 0 && (
+            <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+                Pip&apos;s ideas to close the gap
+              </h3>
+              <p className="mt-1 text-xs text-zinc-400">Tap one to try it on your plan.</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                {altScenarios.map((s) => (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={s.apply}
+                    className="rounded-2xl border border-zinc-200 p-4 text-left transition hover:border-[#b25c72] hover:bg-[#b25c72]/5"
+                  >
+                    <span className="text-2xl">{s.emoji}</span>
+                    <span className="mt-2 block text-sm font-semibold text-zinc-800">{s.title}</span>
+                    <span className="block text-xs font-medium text-[#8a3f54]">{s.sub}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Where else in the world — elevated from the bottom */}
+          <CompareCard comparisons={comparisons} currentId={area.id} onPickArea={onPickArea} />
+
+          <div className="flex items-center gap-3 pt-2">
+            <span className="h-px flex-1 bg-zinc-200" />
+            <span className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+              The full breakdown
+            </span>
+            <span className="h-px flex-1 bg-zinc-200" />
           </div>
 
           <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
             <div className="flex flex-col gap-5">
           {/* Money breakdown */}
-          <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <div id="j-money" className="scroll-mt-4 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
             <div className="flex items-baseline justify-between">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
                 Monthly money, together
@@ -844,7 +1028,7 @@ function Results({
           </div>
 
           {/* Cost to actually move in */}
-          <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <div id="j-movein" className="scroll-mt-4 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
             <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
               To actually move in
             </h3>
@@ -975,7 +1159,10 @@ function Results({
 
             <div className="flex flex-col gap-5">
           {/* Future */}
-          <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-linear-to-br from-[#3b2a40] to-[#6a4a60] p-6 text-white">
+          <div
+            id="j-future"
+            className="scroll-mt-4 overflow-hidden rounded-3xl border border-zinc-200 bg-linear-to-br from-[#3b2a40] to-[#6a4a60] p-6 text-white"
+          >
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-white/70">
                 Your future, together
@@ -1076,66 +1263,6 @@ function Results({
             </div>
           </div>
 
-          {/* City comparison */}
-          <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
-              Same life, other countries
-            </h3>
-            <p className="mt-1 text-xs text-zinc-400">
-              What your exact plan looks like elsewhere, in AUD — tap one to move your whole scenario
-              there.
-            </p>
-
-            <div className="mt-4 flex items-center justify-between px-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
-              <span>Destination</span>
-              <span className="flex gap-6">
-                <span className="w-24 text-right">Left over /mo</span>
-                <span className="w-20 text-right">Time to move</span>
-              </span>
-            </div>
-
-            <ul className="mt-1 divide-y divide-zinc-100">
-              {comparisons.map((c) => {
-                const isCurrent = c.area.id === area.id;
-                return (
-                  <li key={c.area.id}>
-                    <button
-                      type="button"
-                      onClick={() => onPickArea(c.area)}
-                      disabled={isCurrent}
-                      className={`flex w-full items-center justify-between gap-3 rounded-xl px-1 py-3 text-left transition ${
-                        isCurrent ? "cursor-default" : "hover:bg-zinc-50"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <span className={`h-2 w-2 shrink-0 rounded-full ${VERDICT_COPY[c.verdict].dot}`} />
-                        <span className="text-sm font-medium text-zinc-800">
-                          {getCountry(c.area.country)?.flag} {c.area.region}
-                        </span>
-                        {isCurrent && (
-                          <span className="rounded-full bg-[#b25c72]/10 px-2 py-0.5 text-[10px] font-semibold text-[#8a3f54]">
-                            Your pick
-                          </span>
-                        )}
-                      </span>
-                      <span className="flex items-center gap-6 text-sm tabular-nums">
-                        <span
-                          className={`w-24 text-right font-medium ${
-                            c.leftover >= 0 ? "text-emerald-600" : "text-rose-600"
-                          }`}
-                        >
-                          {fmt(c.leftover, "AUD")}
-                        </span>
-                        <span className="w-20 text-right text-zinc-500">
-                          {c.months === null ? "—" : `${c.months} mo`}
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
         </div>
 
         <footer className="mt-10 text-xs text-zinc-400">
@@ -1146,6 +1273,78 @@ function Results({
         </footer>
       </div>
     </main>
+  );
+}
+
+// "Same life, other countries" — your plan across the world, in AUD.
+function CompareCard({
+  comparisons,
+  currentId,
+  onPickArea,
+}: {
+  comparisons: Comparison[];
+  currentId: string;
+  onPickArea: (a: Area) => void;
+}) {
+  return (
+    <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+        Where else in the world?
+      </h3>
+      <p className="mt-1 text-xs text-zinc-400">
+        Your exact plan in other countries, in AUD — tap one to move your whole scenario there.
+      </p>
+
+      <div className="mt-4 flex items-center justify-between px-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+        <span>Destination</span>
+        <span className="flex gap-6">
+          <span className="w-24 text-right">Left over /mo</span>
+          <span className="w-20 text-right">Time to move</span>
+        </span>
+      </div>
+
+      <ul className="mt-1 divide-y divide-zinc-100">
+        {comparisons.map((c) => {
+          const isCurrent = c.area.id === currentId;
+          return (
+            <li key={c.area.id}>
+              <button
+                type="button"
+                onClick={() => onPickArea(c.area)}
+                disabled={isCurrent}
+                className={`flex w-full items-center justify-between gap-3 rounded-xl px-1 py-3 text-left transition ${
+                  isCurrent ? "cursor-default" : "hover:bg-zinc-50"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${VERDICT_COPY[c.verdict].dot}`} />
+                  <span className="text-sm font-medium text-zinc-800">
+                    {getCountry(c.area.country)?.flag} {c.area.region}
+                  </span>
+                  {isCurrent && (
+                    <span className="rounded-full bg-[#b25c72]/10 px-2 py-0.5 text-[10px] font-semibold text-[#8a3f54]">
+                      Your pick
+                    </span>
+                  )}
+                </span>
+                <span className="flex items-center gap-6 text-sm tabular-nums">
+                  <span
+                    className={`w-24 text-right font-medium ${
+                      c.leftover >= 0 ? "text-emerald-600" : "text-rose-600"
+                    }`}
+                  >
+                    {fmt(c.leftover, "AUD")}
+                  </span>
+                  <span className="w-20 text-right text-zinc-500">
+                    {c.months === null ? "—" : `${c.months} mo`}
+                  </span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
@@ -1340,17 +1539,200 @@ function ToggleRow({
   );
 }
 
-function Stat({ label, value, good }: { label: string; value: string; good?: boolean }) {
+// The results hero: a Duolingo-style winding road of the milestones to closing
+// the distance, with Pip on the stage you've reached and a move-in countdown.
+function Journey({
+  result,
+  cur,
+  moveInDate,
+  setMoveInDate,
+}: {
+  result: ReturnType<typeof simulate>;
+  cur: string;
+  moveInDate: string;
+  setMoveInDate: (s: string) => void;
+}) {
+  const verdict = VERDICT_COPY[result.verdict];
+
+  const days = moveInDate
+    ? Math.max(0, Math.ceil((new Date(moveInDate).getTime() - Date.now()) / 86_400_000))
+    : null;
+  const arrived = days === 0;
+
+  const intl = result.international;
+  const nodes = [
+    { emoji: "📍", label: "Today", value: "You're apart" },
+    {
+      emoji: "💸",
+      label: "Afford the month",
+      value:
+        result.leftover >= 0
+          ? `${fmt(result.leftover, cur)}/mo spare`
+          : `short ${fmt(Math.abs(result.leftover), cur)}`,
+      target: "j-money",
+    },
+    {
+      emoji: "🪙",
+      label: "Save the upfront",
+      value: result.monthsToMoveIn === null ? "raise income first" : `${fmt(result.gap, cur)} to go`,
+      target: "j-movein",
+    },
+    {
+      emoji: intl ? "🛂" : "📦",
+      label: intl ? "Visa & the move" : "The move",
+      value: result.visaMonths > 0 ? `~${result.visaMonths} mo wait` : "moving day",
+      target: "j-movein",
+    },
+    {
+      emoji: arrived ? "🎉" : "💛",
+      label: "Move in together",
+      value: days === null ? "set your date ↓" : arrived ? "Today! 🎉" : `${days} days to go`,
+    },
+    { emoji: "🏡", label: "Your future", value: fmt(result.milestones[1].saved, cur), target: "j-future" },
+  ];
+  const currentIdx = result.verdict === "comfortable" ? 4 : result.verdict === "tight" ? 2 : 1;
+
+  const N = nodes.length;
+  const TOP = 52;
+  const GAP = 124;
+  const H = TOP + (N - 1) * GAP + 60;
+  const pos = nodes.map((_, i) => ({ x: i % 2 === 0 ? 26 : 74, y: TOP + i * GAP }));
+  let d = `M ${pos[0].x} ${pos[0].y}`;
+  for (let i = 1; i < N; i++) {
+    const my = (pos[i - 1].y + pos[i].y) / 2;
+    d += ` C ${pos[i - 1].x} ${my}, ${pos[i].x} ${my}, ${pos[i].x} ${pos[i].y}`;
+  }
+
+  // Point along the winding road at a fractional node index.
+  function ptAt(progress: number) {
+    const t = Math.max(0, Math.min(N - 1, progress));
+    const seg = Math.min(N - 2, Math.floor(t));
+    const lt = t - seg;
+    const p0 = pos[seg];
+    const p3 = pos[seg + 1];
+    const my = (p0.y + p3.y) / 2;
+    const u = 1 - lt;
+    return {
+      x: u * u * u * p0.x + 3 * u * u * lt * p0.x + 3 * u * lt * lt * p3.x + lt * lt * lt * p3.x,
+      y: u * u * u * p0.y + 3 * u * u * lt * my + 3 * u * lt * lt * my + lt * lt * lt * p3.y,
+    };
+  }
+
+  // Pip walks from the start to your current stage when the page opens.
+  const [pip, setPip] = useState(() => ptAt(currentIdx));
+  const walkedRef = useRef(false);
+  useEffect(() => {
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduce || walkedRef.current) {
+      setPip(ptAt(currentIdx));
+      return;
+    }
+    walkedRef.current = true;
+    let raf = 0;
+    const start = performance.now();
+    const dur = 1300;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / dur);
+      const eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      setPip(ptAt(eased * currentIdx));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIdx]);
+
+  const tooSoon = days !== null && result.monthsToMoveIn !== null && days < result.monthsToMoveIn * 30;
+
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-4 text-center shadow-sm">
-      <p
-        className={`font-display text-xl font-semibold tabular-nums leading-tight ${
-          good === false ? "text-rose-600" : good === true ? "text-emerald-600" : "text-zinc-800"
-        }`}
-      >
-        {value}
-      </p>
-      <p className="mt-1 text-[11px] font-medium uppercase tracking-wide text-zinc-400">{label}</p>
+    <div className={`overflow-hidden rounded-3xl border p-6 ${verdict.tone}`}>
+      <p className="font-display text-[1.6rem] font-semibold leading-tight">{verdict.badge}</p>
+      <p className="mt-1 text-sm opacity-80">Your road to closing the distance 💛</p>
+
+      <div className="relative mt-3" style={{ height: H }}>
+        <svg
+          className="absolute inset-0 h-full w-full"
+          viewBox={`0 0 100 ${H}`}
+          preserveAspectRatio="none"
+          aria-hidden
+        >
+          <path
+            d={d}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeDasharray="3 5"
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+            opacity={0.3}
+          />
+        </svg>
+
+        {nodes.map((node, i) => (
+          <button
+            key={node.label}
+            type="button"
+            onClick={() =>
+              node.target &&
+              document.getElementById(node.target)?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }
+            aria-label={`${node.label}: ${node.value}`}
+            className={`absolute flex w-28 -translate-x-1/2 -translate-y-1/2 flex-col items-center text-center ${
+              node.target ? "cursor-pointer" : "cursor-default"
+            }`}
+            style={{ left: `${pos[i].x}%`, top: pos[i].y }}
+          >
+            <span className="relative">
+              <span
+                className={`flex h-14 w-14 items-center justify-center rounded-full border-2 text-2xl shadow-sm transition ${
+                  i <= currentIdx ? "border-white bg-white" : "border-white/50 bg-white/30"
+                } ${node.target ? "hover:scale-105" : ""}`}
+              >
+                {node.emoji}
+              </span>
+              <span className="absolute -left-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#b25c72] text-[10px] font-bold text-white">
+                {i + 1}
+              </span>
+            </span>
+            <span className="mt-1.5 text-xs font-semibold leading-tight">{node.label}</span>
+            <span className="text-[11px] leading-tight opacity-75">{node.value}</span>
+          </button>
+        ))}
+
+        {/* Pip — you are here */}
+        <div
+          className="pointer-events-none absolute z-10"
+          style={{ left: `${pip.x}%`, top: pip.y, transform: "translate(-50%, -82%)" }}
+        >
+          <Mascot mood={VERDICT_MOOD[result.verdict]} size={44} />
+        </div>
+      </div>
+
+      <div className="mt-1 rounded-2xl bg-white/40 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <label htmlFor="movein-date" className="text-sm font-medium">
+            When do you want to move in?
+          </label>
+          <input
+            id="movein-date"
+            type="date"
+            value={moveInDate}
+            onChange={(e) => setMoveInDate(e.target.value)}
+            className="rounded-lg border border-white/70 bg-white/80 px-2 py-1 text-sm"
+          />
+          {days !== null && (
+            <span className="font-display text-base font-semibold">
+              {arrived ? "Today! 🎉" : `${days} days to go`}
+            </span>
+          )}
+        </div>
+        {tooSoon && (
+          <p className="mt-2 text-xs opacity-80">
+            That&apos;s a little sooner than your savings reach (~{result.monthsToMoveIn} months) —
+            give it a touch longer or trim the plan, and you&apos;re golden. 💛
+          </p>
+        )}
+      </div>
     </div>
   );
 }
