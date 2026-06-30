@@ -8,11 +8,17 @@ import { getSupabaseClient } from "@/lib/supabase/client";
 import { CURRENCY_OPTIONS, toAUD, useRates } from "@/lib/rates";
 import MapPicker from "./MapPicker";
 import Mascot, { Mood } from "./Mascot";
+import Landing from "./Landing";
+import Methodology from "./Methodology";
+import Faq from "./Faq";
+import Guides from "./Guides";
+import SharedPlan from "./SharedPlan";
+import Legal, { LegalTab } from "./Legal";
 
-const LIFESTYLES: { id: Lifestyle; label: string; sub: string }[] = [
-  { id: "frugal", label: "Frugal", sub: "Save hard" },
-  { id: "comfortable", label: "Comfortable", sub: "Balanced" },
-  { id: "relaxed", label: "Relaxed", sub: "Enjoy it" },
+const LIFESTYLES: { id: Lifestyle; label: string; sub: string; emoji: string }[] = [
+  { id: "frugal", label: "Frugal", sub: "Save hard", emoji: "🌱" },
+  { id: "comfortable", label: "Comfortable", sub: "Balanced", emoji: "☕" },
+  { id: "relaxed", label: "Relaxed", sub: "Enjoy it", emoji: "🌴" },
 ];
 
 const REGION_ORDER = ["oceania", "asia", "europe", "americas", "africa-me"] as const;
@@ -55,8 +61,47 @@ const COMPARE_COUNTRIES = ["AU", "NZ", "GB", "US", "CA", "JP", "SG", "DE"];
 const INTAKE_STEPS = 5;
 const RESULTS_STEP = INTAKE_STEPS + 1;
 
+// The intake rail: a label + a line from Pip for each step, shown beside the
+// form so it always feels like Pip is walking the couple through it.
+const INTAKE_META: { label: string; bubble: string; mood: Mood }[] = [
+  {
+    label: "The two of you",
+    bubble: "First — who are the two of you, and where? It tells me the distance we're closing. 💛",
+    mood: "think",
+  },
+  {
+    label: "What you each earn",
+    bubble: "Now the money coming in — each in your own currency. I'll handle the conversion. 🪙",
+    mood: "think",
+  },
+  {
+    label: "Where you stand today",
+    bubble: "Your starting line — savings and any debts. This is what makes the timeline real. 📊",
+    mood: "think",
+  },
+  {
+    label: "Where to live",
+    bubble:
+      "Now the fun part — where would you actually live? Pick a spot on the map, or search a suburb. You can change it any time. 📍",
+    mood: "think",
+  },
+  {
+    label: "Your life together",
+    bubble:
+      "Last one, then I'll show you everything! How do you two like to live — and are kids in the picture? 💛",
+    mood: "happy",
+  },
+];
+
 export default function Simulator() {
   const [step, setStep] = useState(0); // 0 = welcome, 1..5 = intake, 6 = results
+  const [showMethodology, setShowMethodology] = useState(false); // trust page overlay
+  const [showFaq, setShowFaq] = useState(false); // FAQ overlay
+  const [showGuides, setShowGuides] = useState(false); // Guides hub overlay
+  const [legalTab, setLegalTab] = useState<LegalTab | null>(null); // Privacy/Terms overlay
+  // A scenario opened via a #s=… link shows the read-only SharedPlan snapshot.
+  const [sharedView, setSharedView] = useState(false);
+  const [sharedAt, setSharedAt] = useState("");
 
   const [yourName, setYourName] = useState("");
   const [partnerName, setPartnerName] = useState("");
@@ -109,6 +154,15 @@ export default function Simulator() {
     setExtraCosts([]);
   }, [areaId, housing]);
 
+  // Deep-link from /methodology's CTA — ?start=1 drops straight into intake.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("start") === "1") {
+      setStep(1);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
+
   // Restore a scenario shared via #s=… link (read + edit your own copy).
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -142,7 +196,8 @@ export default function Simulator() {
       setCostOverrides(o.costOverrides ?? {});
       setExtraCosts(o.extraCosts ?? []);
       setMoveInDate(o.moveInDate ?? "");
-      setStep(RESULTS_STEP);
+      setSharedAt(o.sharedAt ?? "");
+      setSharedView(true);
       window.history.replaceState(null, "", window.location.pathname);
     } catch {
       /* ignore a bad link */
@@ -208,7 +263,15 @@ export default function Simulator() {
         const ar = c === area.country ? area : AREAS_BY_COUNTRY[c]?.[0];
         if (!ar) return null;
         const res = simulate({ ...baseInput, area: ar, displayCurrency: "AUD" });
-        return { area: ar, leftover: res.leftover, months: res.monthsToMoveIn, verdict: res.verdict };
+        return {
+          area: ar,
+          rent: res.rent,
+          leftover: res.leftover,
+          upfront: res.upfront,
+          months: res.monthsToMoveIn,
+          years: res.yearsToDeposit,
+          verdict: res.verdict,
+        };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null)
       .sort((a, b) => b.leftover - a.leftover);
@@ -290,6 +353,8 @@ export default function Simulator() {
         costOverrides,
         extraCosts,
         moveInDate,
+        // Stamped at share time so the snapshot can read "Shared · Jun 2026".
+        sharedAt: new Date().toLocaleDateString("en-AU", { month: "short", year: "numeric" }),
       };
       const enc = btoa(unescape(encodeURIComponent(JSON.stringify(o))));
       return `${window.location.origin}${window.location.pathname}#s=${enc}`;
@@ -311,6 +376,26 @@ export default function Simulator() {
     setAreaQuery("");
     const first = AREAS_BY_COUNTRY[c]?.[0];
     if (first) setAreaId(first.id);
+  }
+
+  if (sharedView) {
+    return (
+      <SharedPlan
+        sharedBy={yourName}
+        sharedAt={sharedAt}
+        names={{ yourName, partnerName }}
+        locationA={locationA}
+        locationB={locationB}
+        area={area}
+        lifestyle={lifestyle}
+        kids={kids}
+        result={result}
+        onStart={() => {
+          setSharedView(false);
+          setStep(1);
+        }}
+      />
+    );
   }
 
   if (step === RESULTS_STEP) {
@@ -355,53 +440,80 @@ export default function Simulator() {
         setSaveState={setSaveState}
         onTweak={() => setStep(1)}
         onRestart={() => setStep(0)}
+        onMethodology={() => setShowMethodology(true)}
+      />
+    );
+  }
+
+  if (showMethodology) {
+    return (
+      <Methodology
+        onBack={() => setShowMethodology(false)}
+        onStart={() => {
+          setShowMethodology(false);
+          setStep(1);
+        }}
+      />
+    );
+  }
+
+  if (showFaq) {
+    return (
+      <Faq
+        onBack={() => setShowFaq(false)}
+        onStart={() => {
+          setShowFaq(false);
+          setStep(1);
+        }}
+      />
+    );
+  }
+
+  if (showGuides) {
+    return (
+      <Guides
+        onBack={() => setShowGuides(false)}
+        onStart={() => {
+          setShowGuides(false);
+          setStep(1);
+        }}
+      />
+    );
+  }
+
+  if (legalTab) {
+    return (
+      <Legal
+        initialTab={legalTab}
+        onBack={() => setLegalTab(null)}
+        onStart={() => {
+          setLegalTab(null);
+          setStep(1);
+        }}
+      />
+    );
+  }
+
+  if (step === 0) {
+    return (
+      <Landing
+        onStart={next}
+        onMethodology={() => setShowMethodology(true)}
+        onFaq={() => setShowFaq(true)}
+        onGuides={() => setShowGuides(true)}
+        onLegal={(tab) => setLegalTab(tab)}
       />
     );
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center px-5 py-10">
-      <div className="w-full max-w-xl">
-        <div className="mb-8 flex items-center gap-2 text-[#b25c72]">
-          <HeartGap />
-          <span className="font-display text-xl font-semibold tracking-tight">GetCloser</span>
-        </div>
-
-        {step > 0 && <FlightPath step={step} total={INTAKE_STEPS} />}
-
-        {step === 0 && (
-          <div key="welcome" className="step-in">
-            <div className="flex justify-center">
-              <Mascot mood="wave" size={150} />
-            </div>
-            <p className="mt-4 text-center text-sm font-medium text-[#b25c72]">
-              Hi, I&apos;m Pip 💛
-            </p>
-            <h1 className="mt-2 text-center font-display text-[2.7rem] font-semibold leading-[1.05] tracking-tight">
-              Can you afford to close the distance?
-            </h1>
-            <p className="mx-auto mt-4 max-w-md text-center text-lg text-zinc-600">
-              You two are doing long distance. Answer a few quick questions and I&apos;ll show you
-              exactly what moving in together would cost — anywhere in the world.
-            </p>
-            <div className="mt-8 flex flex-col items-center">
-              <button
-                onClick={next}
-                className="rounded-2xl bg-[#b25c72] px-7 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-[#9c4a60]"
-              >
-                Let&apos;s close the gap →
-              </button>
-              <p className="mt-4 text-sm text-zinc-400">Takes about a minute. No sign-up.</p>
-            </div>
-          </div>
-        )}
-
+    <IntakeShell step={step}>
         {/* Step 1 — the two of you & where you each are */}
         {step === 1 && (
           <Step
             key="step1"
             title="The two of you"
-            subtitle="Your names, and where you each are right now — this sets the distance you're closing."
+            subtitle="Your names, and where you each are right now."
             onBack={back}
             onNext={next}
           >
@@ -444,7 +556,9 @@ export default function Simulator() {
             onBack={back}
             onNext={next}
           >
-            <MoneyField
+            <EarnCard
+              initial={(yourName.trim()[0] || "Y").toUpperCase()}
+              tint="you"
               who={yourName ? `${yourName}'s` : "Your"}
               value={incomeLocalA}
               onValue={setIncomeLocalA}
@@ -452,7 +566,9 @@ export default function Simulator() {
               onCurrency={setCurrencyA}
               aud={incomeA}
             />
-            <MoneyField
+            <EarnCard
+              initial={(partnerName.trim()[0] || "T").toUpperCase()}
+              tint="them"
               who={partnerName ? `${partnerName}'s` : "Their"}
               value={incomeLocalB}
               onValue={setIncomeLocalB}
@@ -460,7 +576,19 @@ export default function Simulator() {
               onCurrency={setCurrencyB}
               aud={incomeB}
             />
-            <p className="mt-5 text-xs text-zinc-400">
+
+            {/* Combined take-home, in AUD — the number we plan the move around. */}
+            <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-[#b25c72]/20 bg-[#b25c72]/[0.07] px-5 py-4">
+              <div>
+                <p className="text-sm font-semibold text-[#7a5560]">Together, each month</p>
+                <p className="text-xs text-zinc-400">Combined take-home, after tax</p>
+              </div>
+              <p className="font-display text-2xl font-semibold tabular-nums text-[#b25c72]">
+                {fmt(incomeA + incomeB)}
+              </p>
+            </div>
+
+            <p className="mt-4 text-xs text-zinc-400">
               {ratesLive ? "Live mid-market rates" : "Indicative rates"} · use what actually lands in
               your accounts each month.
             </p>
@@ -476,28 +604,31 @@ export default function Simulator() {
             onBack={back}
             onNext={next}
           >
-            <Slider
-              label="Saved toward the move (together)"
-              value={savings}
-              onChange={setSavings}
-              min={0}
-              max={100000}
-              step={1000}
-            />
-            <Slider
-              label="Monthly debt repayments (together)"
-              value={monthlyDebts}
-              onChange={setMonthlyDebts}
-              min={0}
-              max={4000}
-              step={50}
-              suffix="/mo"
-            />
-            <p className="mt-5 text-xs text-zinc-400">
-              Include loans, credit cards and HECS. Leave debts at $0 if you have none.
-            </p>
+            {/* Variant C — the core starting-line inputs sit in a clean white card */}
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5 [&>div:first-child]:mt-0">
+              <Slider
+                label="Saved toward the move (together)"
+                value={savings}
+                onChange={setSavings}
+                min={0}
+                max={100000}
+                step={1000}
+              />
+              <Slider
+                label="Monthly debt repayments (together)"
+                value={monthlyDebts}
+                onChange={setMonthlyDebts}
+                min={0}
+                max={4000}
+                step={50}
+                suffix="/mo"
+              />
+              <p className="mt-5 text-xs text-zinc-400">
+                Include loans, credit cards and HECS. Leave debts at $0 if you have none.
+              </p>
+            </div>
 
-            <div className="mt-6 rounded-2xl border border-zinc-200">
+            <div className="mt-4 rounded-2xl border border-zinc-200 bg-white">
               <button
                 type="button"
                 onClick={() => setExtrasOpen((o) => !o)}
@@ -635,7 +766,7 @@ export default function Simulator() {
               onChange={(e) => setAreaQuery(e.target.value)}
               placeholder="Search a suburb or city…"
               aria-label="Search a suburb or city"
-              className="mt-2 w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm focus:border-[#b25c72] focus:outline-none focus:ring-2 focus:ring-[#b25c72]/30"
+              className="mt-4 w-full rounded-xl border border-zinc-300 px-3 py-2.5 text-sm focus:border-[#b25c72] focus:outline-none focus:ring-2 focus:ring-[#b25c72]/30"
             />
 
             <div className="mt-2 max-h-72 space-y-3 overflow-y-auto pr-1">
@@ -692,6 +823,60 @@ export default function Simulator() {
               })()}
             </div>
 
+          </Step>
+        )}
+
+        {/* Step 5 — life together */}
+        {step === 5 && (
+          <Step
+            key="step5"
+            title="Your life together"
+            subtitle="This shapes the budget and the years ahead."
+            onBack={back}
+            onNext={next}
+            nextLabel="See your plan →"
+          >
+            <span className="block text-sm font-medium text-zinc-700">How do you like to live?</span>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {LIFESTYLES.map((l) => {
+                const selected = lifestyle === l.id;
+                return (
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => setLifestyle(l.id)}
+                    aria-pressed={selected}
+                    className={`rounded-2xl border px-3 py-4 text-center transition ${
+                      selected
+                        ? "border-[#b25c72] bg-[#b25c72]/[0.08]"
+                        : "border-zinc-200 bg-white hover:border-zinc-300"
+                    }`}
+                  >
+                    <span className="block text-[1.4rem] leading-none" aria-hidden>
+                      {l.emoji}
+                    </span>
+                    <span className="mt-2 block text-[15px] font-semibold text-zinc-800">{l.label}</span>
+                    <span
+                      className={`block text-xs ${selected ? "font-medium text-[#b25c72]" : "text-zinc-500"}`}
+                    >
+                      {l.sub}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 flex items-center justify-between rounded-xl border border-zinc-200 px-4 py-3">
+              <div>
+                <span className="block text-sm font-medium text-zinc-700">Kids in the plan</span>
+                <span className="block text-xs text-zinc-500">Factored into the future</span>
+              </div>
+              <Stepper value={kids} onChange={setKids} min={0} max={3} />
+            </div>
+
+            {/* The in-between — moved off Step 4 so the place screen stays a pure
+                picker. Only shown when someone actually relocates to close the
+                distance; it's what makes the long-distance cost real. */}
             {(relocationFor(locationA, area.country, areaState(area)).relocates ||
               relocationFor(locationB, area.country, areaState(area)).relocates) && (
               <div className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50/60 p-4">
@@ -723,47 +908,7 @@ export default function Simulator() {
             )}
           </Step>
         )}
-
-        {/* Step 5 — life together */}
-        {step === 5 && (
-          <Step
-            key="step5"
-            title="Your life together"
-            subtitle="This shapes the budget and the years ahead."
-            onBack={back}
-            onNext={next}
-            nextLabel="See your plan →"
-          >
-            <span className="block text-sm font-medium text-zinc-700">How do you like to live?</span>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              {LIFESTYLES.map((l) => (
-                <button
-                  key={l.id}
-                  type="button"
-                  onClick={() => setLifestyle(l.id)}
-                  className={`rounded-xl border px-3 py-3 text-left transition ${
-                    lifestyle === l.id
-                      ? "border-[#b25c72] bg-[#b25c72]/10"
-                      : "border-zinc-200 bg-white hover:border-zinc-300"
-                  }`}
-                >
-                  <span className="block text-sm font-semibold">{l.label}</span>
-                  <span className="block text-xs text-zinc-500">{l.sub}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-6 flex items-center justify-between rounded-xl border border-zinc-200 px-4 py-3">
-              <div>
-                <span className="block text-sm font-medium text-zinc-700">Kids in the plan</span>
-                <span className="block text-xs text-zinc-500">Factored into the future</span>
-              </div>
-              <Stepper value={kids} onChange={setKids} min={0} max={3} />
-            </div>
-          </Step>
-        )}
-      </div>
-    </main>
+    </IntakeShell>
   );
 }
 
@@ -771,10 +916,44 @@ export default function Simulator() {
 
 type Comparison = {
   area: Area;
+  rent: number;
   leftover: number;
+  upfront: number;
   months: number | null;
+  years: number | null;
   verdict: ReturnType<typeof simulate>["verdict"];
 };
+
+// Short verdict words for the compact comparison chips.
+const VERDICT_LABEL: Record<Comparison["verdict"], string> = {
+  comfortable: "Comfortable",
+  tight: "Tight",
+  "not-yet": "Not yet",
+};
+
+// One of the three headline numbers shown at a glance under the verdict.
+function StatTile({
+  value,
+  label,
+  tone = "neutral",
+}: {
+  value: string;
+  label: string;
+  tone?: "neutral" | "good" | "bad";
+}) {
+  const color =
+    tone === "good" ? "text-emerald-600" : tone === "bad" ? "text-rose-600" : "text-[#2b2329]";
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white p-4 text-center shadow-sm sm:p-5">
+      <div className={`font-display text-2xl font-semibold tabular-nums sm:text-3xl ${color}`}>
+        {value}
+      </div>
+      <div className="mt-1 text-[10px] font-medium uppercase tracking-wide text-zinc-400 sm:text-[11px]">
+        {label}
+      </div>
+    </div>
+  );
+}
 
 function Results({
   names,
@@ -802,6 +981,7 @@ function Results({
   setSaveState,
   onTweak,
   onRestart,
+  onMethodology,
 }: {
   names: { yourName: string; partnerName: string };
   area: Area;
@@ -828,12 +1008,22 @@ function Results({
   setSaveState: (s: "idle" | "saving" | "done" | "error") => void;
   onTweak: () => void;
   onRestart: () => void;
+  onMethodology: () => void;
 }) {
   const a = area;
   const buying = result.housing === "buy";
   const cur = result.currency; // destination currency everything is shown in
   const symbol = currencySymbol(cur);
   const verdict = VERDICT_COPY[result.verdict];
+  // A single, plain-English line beneath the verdict that puts the money in context.
+  const verdictSummary =
+    result.verdict === "comfortable"
+      ? `Around ${fmt(result.leftover, cur)} left over each month after the basics.`
+      : result.verdict === "tight"
+        ? `Just ${fmt(result.leftover, cur)} spare each month — doable, but keep an eye on it.`
+        : result.leftover < 0
+          ? `You're short ${fmt(Math.abs(result.leftover), cur)} a month right now — here's how to close it.`
+          : `It's close — about ${fmt(result.leftover, cur)} spare each month. Here's how to get there.`;
   const milestone = result.milestones.find((m) => m.years === horizon) ?? result.milestones[1];
   const couple =
     names.yourName && names.partnerName
@@ -904,6 +1094,31 @@ function Results({
         </p>
 
         <div className="step-in mt-3 flex flex-col gap-5">
+          {/* The verdict — Pip delivers the headline with the money in one line */}
+          <div className={`flex items-center gap-4 rounded-3xl border p-5 sm:gap-5 sm:p-6 ${verdict.tone}`}>
+            <Mascot mood={VERDICT_MOOD[result.verdict]} size={72} className="shrink-0" />
+            <div>
+              <p className="font-display text-2xl font-semibold leading-tight sm:text-[1.9rem]">
+                {verdict.badge}
+              </p>
+              <p className="mt-1.5 text-sm opacity-80">{verdictSummary}</p>
+            </div>
+          </div>
+
+          {/* The three headline numbers, at a glance */}
+          <div className="grid grid-cols-3 gap-3 sm:gap-4">
+            <StatTile
+              value={fmt(result.leftover, cur)}
+              label="Left over /mo"
+              tone={result.leftover >= 0 ? "good" : "bad"}
+            />
+            <StatTile value={fmt(result.upfront, cur)} label="To move in" />
+            <StatTile
+              value={result.monthsToMoveIn === null ? "—" : `${result.monthsToMoveIn} mo`}
+              label="Until you move"
+            />
+          </div>
+
           {/* The journey — your road to closing the distance */}
           <Journey
             result={result}
@@ -1269,14 +1484,25 @@ function Results({
           Figures are indicative local medians for a two-bedroom place and typical living costs,
           shown in {a.currency} — not live data. Visa, stamp duty and mortgage assumptions are rough
           global estimates. This is a starting point for the conversation, not financial or
-          immigration advice.
+          immigration advice.{" "}
+          <button
+            onClick={onMethodology}
+            className="font-medium text-zinc-500 underline underline-offset-2 transition hover:text-zinc-700"
+          >
+            How we calculate this →
+          </button>
         </footer>
       </div>
     </main>
   );
 }
 
-// "Same life, other countries" — your plan across the world, in AUD.
+const fmtYears = (years: number | null) => (years === null ? "—" : `~${years.toFixed(1)} yrs`);
+const cityFlag = (a: Area) => getCountry(a.country)?.flag ?? "";
+
+// "Same life, other countries" — your plan across the world, in AUD. A
+// head-to-head between your pick and its best-value rival, then the full
+// leaderboard ranked by what's left over each month.
 function CompareCard({
   comparisons,
   currentId,
@@ -1286,64 +1512,208 @@ function CompareCard({
   currentId: string;
   onPickArea: (a: Area) => void;
 }) {
+  // comparisons is already sorted by leftover, highest first.
+  const current = comparisons.find((c) => c.area.id === currentId) ?? comparisons[0];
+  // Best rival = the highest-leftover option that isn't your pick.
+  const rival = comparisons.find((c) => c.area.id !== current.area.id);
+
   return (
-    <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
-        Where else in the world?
-      </h3>
-      <p className="mt-1 text-xs text-zinc-400">
-        Your exact plan in other countries, in AUD — tap one to move your whole scenario there.
-      </p>
+    <div className="flex flex-col gap-5">
+      {/* Head to head — your pick vs. its best-value rival */}
+      {rival && (
+        <HeadToHead current={current} rival={rival} onPickArea={onPickArea} />
+      )}
 
-      <div className="mt-4 flex items-center justify-between px-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
-        <span>Destination</span>
-        <span className="flex gap-6">
-          <span className="w-24 text-right">Left over /mo</span>
-          <span className="w-20 text-right">Time to move</span>
-        </span>
-      </div>
+      {/* The full leaderboard */}
+      <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="font-display text-xl font-semibold tracking-tight text-zinc-900">
+            Where your money goes furthest
+          </h3>
+          <span className="hidden text-xs text-zinc-400 sm:block">Left over /mo, in AUD · highest first</span>
+        </div>
+        <p className="mt-1 text-xs text-zinc-400">
+          Your exact plan in other countries — tap one to move your whole scenario there.
+        </p>
 
-      <ul className="mt-1 divide-y divide-zinc-100">
-        {comparisons.map((c) => {
-          const isCurrent = c.area.id === currentId;
-          return (
-            <li key={c.area.id}>
-              <button
-                type="button"
-                onClick={() => onPickArea(c.area)}
-                disabled={isCurrent}
-                className={`flex w-full items-center justify-between gap-3 rounded-xl px-1 py-3 text-left transition ${
-                  isCurrent ? "cursor-default" : "hover:bg-zinc-50"
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <span className={`h-2 w-2 shrink-0 rounded-full ${VERDICT_COPY[c.verdict].dot}`} />
-                  <span className="text-sm font-medium text-zinc-800">
-                    {getCountry(c.area.country)?.flag} {c.area.region}
-                  </span>
-                  {isCurrent && (
-                    <span className="rounded-full bg-[#b25c72]/10 px-2 py-0.5 text-[10px] font-semibold text-[#8a3f54]">
-                      Your pick
-                    </span>
-                  )}
-                </span>
-                <span className="flex items-center gap-6 text-sm tabular-nums">
+        <div className="mt-4 flex items-center px-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+          <span className="w-7">#</span>
+          <span className="flex-1">City</span>
+          <span className="hidden w-24 text-right sm:block">Rent /mo</span>
+          <span className="w-24 text-right">Left over</span>
+          <span className="hidden w-24 text-right md:block">To a deposit</span>
+          <span className="w-24 text-right">Verdict</span>
+        </div>
+
+        <ul className="mt-1 divide-y divide-zinc-100">
+          {comparisons.map((c, i) => {
+            const isCurrent = c.area.id === currentId;
+            const v = VERDICT_COPY[c.verdict];
+            return (
+              <li key={c.area.id}>
+                <button
+                  type="button"
+                  onClick={() => onPickArea(c.area)}
+                  disabled={isCurrent}
+                  className={`flex w-full items-center rounded-xl px-1 py-3 text-left text-sm transition ${
+                    isCurrent ? "cursor-default" : "hover:bg-zinc-50"
+                  }`}
+                >
                   <span
-                    className={`w-24 text-right font-medium ${
+                    className={`w-7 font-display font-semibold ${
+                      i < 3 ? "text-[#b25c72]" : "text-zinc-400"
+                    }`}
+                  >
+                    {i + 1}
+                  </span>
+                  <span className="flex flex-1 items-center gap-2 font-medium text-zinc-800">
+                    <span>{cityFlag(c.area)} {c.area.city}</span>
+                    {isCurrent && (
+                      <span className="rounded-full bg-[#b25c72]/10 px-2 py-0.5 text-[10px] font-semibold text-[#8a3f54]">
+                        Your pick
+                      </span>
+                    )}
+                  </span>
+                  <span className="hidden w-24 text-right tabular-nums text-zinc-500 sm:block">
+                    {fmt(c.rent, "AUD")}
+                  </span>
+                  <span
+                    className={`w-24 text-right font-semibold tabular-nums ${
                       c.leftover >= 0 ? "text-emerald-600" : "text-rose-600"
                     }`}
                   >
                     {fmt(c.leftover, "AUD")}
                   </span>
-                  <span className="w-20 text-right text-zinc-500">
-                    {c.months === null ? "—" : `${c.months} mo`}
+                  <span className="hidden w-24 text-right tabular-nums text-zinc-500 md:block">
+                    {fmtYears(c.years)}
                   </span>
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+                  <span className="flex w-24 items-center justify-end gap-1.5">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${v.dot}`} />
+                    <span className="text-xs text-zinc-500">{VERDICT_LABEL[c.verdict]}</span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="mt-3 px-1 text-[11px] text-zinc-400">
+          Indicative medians for a two-bedroom place and typical living costs, normalised to AUD.
+          Not live data — a starting point, not financial advice.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function HeadToHead({
+  current,
+  rival,
+  onPickArea,
+}: {
+  current: Comparison;
+  rival: Comparison;
+  onPickArea: (a: Area) => void;
+}) {
+  // Whichever leaves more each month wears the "Better value" badge.
+  const [winner, other] =
+    rival.leftover > current.leftover ? [rival, current] : [current, rival];
+  const monthlyGap = Math.abs(current.leftover - rival.leftover);
+  // Positive = winner reaches a deposit sooner than the other.
+  const yearsSooner =
+    winner.years !== null && other.years !== null ? other.years - winner.years : null;
+
+  return (
+    <div>
+      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">Head to head</h3>
+      <div className="relative mt-3 grid gap-4 sm:grid-cols-2">
+        <CompareColumn c={current} winner={winner.area.id === current.area.id} onPickArea={onPickArea} />
+        <CompareColumn c={rival} winner={winner.area.id === rival.area.id} onPickArea={onPickArea} />
+        <span className="pointer-events-none absolute left-1/2 top-1/2 hidden h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white font-display text-sm font-semibold text-zinc-400 shadow-sm sm:flex">
+          vs
+        </span>
+      </div>
+
+      {monthlyGap > 0 && (
+        <div className="mt-3 flex items-center gap-3 rounded-2xl border border-[#b25c72]/20 bg-[#b25c72]/[0.07] px-4 py-3">
+          <Mascot mood="happy" size={40} className="shrink-0" />
+          <p className="text-sm text-[#7a5560]">
+            <strong className="text-zinc-700">
+              {winner.area.city} leaves you ~{fmt(monthlyGap, "AUD")} more every month
+            </strong>
+            {yearsSooner !== null && yearsSooner >= 0.3
+              ? ` — and gets you to a deposit about ${yearsSooner.toFixed(1)} years sooner.`
+              : "."}{" "}
+            Same two incomes, very different runway.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CompareColumn({
+  c,
+  winner,
+  onPickArea,
+}: {
+  c: Comparison;
+  winner: boolean;
+  onPickArea: (a: Area) => void;
+}) {
+  const v = VERDICT_COPY[c.verdict];
+  const rows: [string, string, boolean][] = [
+    ["Rent /mo (2-bed)", fmt(c.rent, "AUD"), false],
+    ["Left over /mo", fmt(c.leftover, "AUD"), c.leftover >= 0],
+    ["Upfront to move in", fmt(c.upfront, "AUD"), false],
+    ["Years to a deposit", fmtYears(c.years), false],
+  ];
+  return (
+    <div
+      className={`relative rounded-3xl bg-white p-6 ${
+        winner
+          ? "border-2 border-[#b25c72] shadow-[0_8px_26px_-12px_rgba(178,92,114,0.5)]"
+          : "border border-zinc-200 shadow-sm"
+      }`}
+    >
+      {winner && (
+        <span className="absolute -top-3 right-5 rounded-full bg-[#b25c72] px-3 py-1 text-[11px] font-semibold tracking-tight text-white">
+          Better value
+        </span>
+      )}
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <div className="font-display text-xl font-semibold tracking-tight">
+            {cityFlag(c.area)} {c.area.city}
+          </div>
+          <div className="text-xs text-zinc-400">{c.area.region}</div>
+        </div>
+        <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-zinc-50 px-2.5 py-1 text-xs font-semibold text-zinc-600">
+          <span className={`h-1.5 w-1.5 rounded-full ${v.dot}`} />
+          {VERDICT_LABEL[c.verdict]}
+        </span>
+      </div>
+      <dl className="mt-4">
+        {rows.map(([label, value, good], i) => (
+          <div
+            key={label}
+            className={`flex items-center justify-between py-2.5 text-sm ${
+              i < rows.length - 1 ? "border-b border-zinc-100" : ""
+            }`}
+          >
+            <dt className="text-zinc-600">{label}</dt>
+            <dd className={`font-semibold tabular-nums ${good ? "text-emerald-600" : "text-zinc-800"}`}>
+              {value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <button
+        type="button"
+        onClick={() => onPickArea(c.area)}
+        className="mt-4 w-full rounded-xl border border-zinc-200 py-2 text-sm font-semibold text-zinc-600 transition hover:border-[#b25c72] hover:text-[#8a3f54]"
+      >
+        Use {c.area.city}
+      </button>
     </div>
   );
 }
@@ -1646,8 +2016,9 @@ function Journey({
 
   return (
     <div className={`overflow-hidden rounded-3xl border p-6 ${verdict.tone}`}>
-      <p className="font-display text-[1.6rem] font-semibold leading-tight">{verdict.badge}</p>
-      <p className="mt-1 text-sm opacity-80">Your road to closing the distance 💛</p>
+      <p className="text-sm font-semibold uppercase tracking-wide opacity-70">
+        Your road to closing the distance 💛
+      </p>
 
       <div className="relative mt-3" style={{ height: H }}>
         <svg
@@ -1799,7 +2170,11 @@ function EditableCost({
   );
 }
 
-function MoneyField({
+// Variant C earn card: an avatar marks whose pay it is, with the take-home
+// input + currency, and the AUD conversion when it isn't already in dollars.
+function EarnCard({
+  initial,
+  tint,
   who,
   value,
   onValue,
@@ -1807,6 +2182,8 @@ function MoneyField({
   onCurrency,
   aud,
 }: {
+  initial: string;
+  tint: "you" | "them";
   who: string;
   value: number;
   onValue: (n: number) => void;
@@ -1814,21 +2191,31 @@ function MoneyField({
   onCurrency: (c: string) => void;
   aud: number;
 }) {
+  const avatar =
+    tint === "you" ? "bg-[#b25c72]/15 text-[#b25c72]" : "bg-[#6a4a60]/15 text-[#6a4a60]";
   return (
-    <div className="mt-6">
-      <label className="block text-sm font-medium text-zinc-700">{who} take-home pay</label>
-      <div className="mt-2 flex items-center gap-2">
+    <div className="mt-3 rounded-2xl border border-zinc-200 bg-white p-5 first:mt-0">
+      <div className="mb-3.5 flex items-center gap-2.5">
+        <span
+          aria-hidden
+          className={`flex h-9 w-9 flex-none items-center justify-center rounded-full text-sm font-bold ${avatar}`}
+        >
+          {initial}
+        </span>
+        <span className="text-sm font-semibold text-zinc-800">{who} take-home pay</span>
+      </div>
+      <div className="flex items-center gap-2.5">
         <NumberInput
           value={value}
           onValue={onValue}
           ariaLabel={`${who} take-home pay`}
-          className="w-40 rounded-xl border border-zinc-300 px-3 py-2.5 text-sm focus:border-[#b25c72] focus:outline-none focus:ring-2 focus:ring-[#b25c72]/30"
+          className="min-w-0 flex-1 rounded-xl border border-zinc-300 px-3.5 py-3 font-display text-xl font-semibold tabular-nums focus:border-[#b25c72] focus:outline-none focus:ring-2 focus:ring-[#b25c72]/30"
         />
         <select
           value={currency}
           onChange={(e) => onCurrency(e.target.value)}
           aria-label="Pay currency"
-          className="rounded-xl border border-zinc-300 bg-white px-2.5 py-2.5 text-sm font-medium focus:border-[#b25c72] focus:outline-none focus:ring-2 focus:ring-[#b25c72]/30"
+          className="flex-none rounded-xl border border-zinc-300 bg-white px-2.5 py-3 text-sm font-semibold focus:border-[#b25c72] focus:outline-none focus:ring-2 focus:ring-[#b25c72]/30"
         >
           {CURRENCY_OPTIONS.map((c) => (
             <option key={c} value={c}>
@@ -1836,11 +2223,11 @@ function MoneyField({
             </option>
           ))}
         </select>
-        <span className="text-xs text-zinc-400">/mo</span>
+        <span className="flex-none text-xs text-zinc-400">/mo</span>
       </div>
       {currency !== "AUD" && (
-        <p className="mt-1.5 text-xs text-zinc-500">
-          ≈ <span className="font-semibold text-[#8a3f54]">{fmt(aud)}</span> /mo in AUD
+        <p className="mt-2.5 text-xs text-zinc-500">
+          ≈ <span className="font-semibold text-[#6a4a60]">{fmt(aud)}</span> /mo in AUD
         </p>
       )}
     </div>
@@ -1941,39 +2328,84 @@ function Stepper({
   );
 }
 
-function Heart({ size = 20, className = "" }: { size?: number; className?: string }) {
+// Variant C — the Pip-led split. A dark rail walks the couple through the
+// intake (logo, Pip + a line for the step, and the 5-step list with the
+// current one lit), while the form sits in the panel on the right. On mobile
+// the rail folds into a compact Pip header band above the form.
+function IntakeShell({ step, children }: { step: number; children: React.ReactNode }) {
+  const meta = INTAKE_META[step - 1] ?? INTAKE_META[0];
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" className={className} aria-hidden>
-      <path
-        fill="currentColor"
-        d="M12 21s-7-4.5-9.4-8.6C1 9.5 2.6 5.5 6.2 5.5c2 0 3.2 1.2 3.8 2.3.6-1.1 1.8-2.3 3.8-2.3 3.6 0 5.2 4 3.6 6.9C19 16.5 12 21 12 21Z"
-      />
-    </svg>
-  );
-}
+    <main className="flex min-h-[100svh] flex-1 flex-col lg:flex-row">
+      {/* Rail — desktop */}
+      <aside className="hidden bg-gradient-to-b from-[#3b2a40] to-[#5a3f54] px-10 py-11 text-white lg:flex lg:w-[420px] lg:flex-none lg:flex-col">
+        <div className="mb-9 flex items-center gap-2 text-[#f3c9d4]">
+          <HeartGap />
+          <span className="font-display text-xl font-semibold tracking-tight">GetCloser</span>
+        </div>
 
-// The wizard's progress, reimagined: Pip flies the dashed path from your heart
-// to your partner's, arriving when the intake is done.
-function FlightPath({ step, total }: { step: number; total: number }) {
-  const pct = Math.min((step / total) * 100, 100);
-  const arrived = step >= total;
-  return (
-    <div className="relative mb-9 mt-1 h-14">
-      <div className="absolute left-3 right-3 top-9 border-t-2 border-dashed border-zinc-300" />
-      <Heart size={20} className="absolute left-0 top-9 -translate-y-1/2 text-[#b25c72]" />
-      <Heart
-        size={20}
-        className={`absolute right-0 top-9 -translate-y-1/2 transition-colors duration-500 ${
-          arrived ? "text-[#b25c72]" : "text-zinc-300"
-        }`}
-      />
-      <div
-        className="absolute top-0 transition-all duration-700 ease-out"
-        style={{ left: `${pct}%`, transform: "translateX(-50%)" }}
-      >
-        <Mascot mood={arrived ? "happy" : "wave"} size={46} />
+        <div className="mb-1 flex justify-center">
+          <Mascot mood={meta.mood} size={116} />
+        </div>
+        <div
+          key={`bubble-${step}`}
+          className="step-in mb-8 rounded-2xl rounded-tl-sm bg-white/10 px-4 py-3.5 text-[15px] leading-relaxed text-[#f6ecef]"
+        >
+          {meta.bubble}
+        </div>
+
+        <ol className="mt-auto flex flex-col gap-0.5">
+          {INTAKE_META.map((m, i) => {
+            const n = i + 1;
+            const active = n === step;
+            const done = n < step;
+            return (
+              <li
+                key={m.label}
+                className={`flex items-center gap-3 py-2 transition-opacity ${active ? "" : "opacity-50"}`}
+              >
+                <span
+                  className={`flex h-7 w-7 flex-none items-center justify-center rounded-full text-xs font-bold ${
+                    active || done
+                      ? "bg-white text-[#3b2a40]"
+                      : "border-[1.5px] border-white/50 text-white"
+                  }`}
+                >
+                  {done ? "✓" : n}
+                </span>
+                <span className={`text-sm ${active ? "font-semibold" : ""}`}>{m.label}</span>
+              </li>
+            );
+          })}
+        </ol>
+      </aside>
+
+      {/* Rail — mobile header band */}
+      <div className="bg-gradient-to-b from-[#3b2a40] to-[#5a3f54] px-5 pb-5 pt-6 text-white lg:hidden">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[#f3c9d4]">
+            <HeartGap />
+            <span className="font-display text-base font-semibold tracking-tight">GetCloser</span>
+          </div>
+          <span className="text-xs text-[#d7c4cd]">
+            Step {step} / {INTAKE_STEPS}
+          </span>
+        </div>
+        <div className="mt-3 flex items-center gap-3">
+          <Mascot mood={meta.mood} size={56} className="shrink-0" />
+          <div
+            key={`mbubble-${step}`}
+            className="step-in rounded-2xl rounded-tl-sm bg-white/12 px-3.5 py-2.5 text-[13px] leading-snug text-[#f6ecef]"
+          >
+            {meta.bubble}
+          </div>
+        </div>
       </div>
-    </div>
+
+      {/* Form panel */}
+      <div className="flex flex-1 items-start justify-center px-5 py-10 lg:items-center lg:px-16">
+        <div className="w-full max-w-lg">{children}</div>
+      </div>
+    </main>
   );
 }
 

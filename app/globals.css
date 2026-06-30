@@ -71,6 +71,17 @@ body {
   .mascot, .mascot-blink, .mascot-wave { animation: none; }
 }
 
+/* Welcome flight path — the dashed arc that travels between two postcodes */
+@keyframes dash {
+  to { stroke-dashoffset: -220; }
+}
+.flightline {
+  animation: dash 9s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .flightline { animation: none; }
+}
+
 /* Range slider styling */
 input[type="range"] {
   -webkit-appearance: none;
