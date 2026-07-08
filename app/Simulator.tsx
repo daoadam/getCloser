@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Area, AREAS_BY_COUNTRY, DESTINATION_COUNTRIES, areaState, areasByRegion, getArea } from "@/lib/areas";
 import { CostLine, fmt, Housing, Lifestyle, Location, relocationFor, simulate } from "@/lib/calc";
@@ -1061,10 +1062,10 @@ function Results({
     <main className="flex-1">
       <div className="mx-auto max-w-5xl px-5 py-10">
         <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[#b25c72]">
+          <Link href="/" className="flex items-center gap-2 text-[#b25c72]" title="Back to the journal">
             <HeartGap />
             <span className="font-display text-xl font-semibold tracking-tight">Close the Distance</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-2 text-sm">
             <button
               onClick={async () => {
@@ -2338,10 +2339,10 @@ function IntakeShell({ step, children }: { step: number; children: React.ReactNo
     <main className="flex min-h-[100svh] flex-1 flex-col lg:flex-row">
       {/* Rail — desktop */}
       <aside className="hidden bg-gradient-to-b from-[#3b2a40] to-[#5a3f54] px-10 py-11 text-white lg:flex lg:w-[420px] lg:flex-none lg:flex-col">
-        <div className="mb-9 flex items-center gap-2 text-[#f3c9d4]">
+        <Link href="/" className="mb-9 flex items-center gap-2 text-[#f3c9d4]" title="Back to the journal">
           <HeartGap />
           <span className="font-display text-xl font-semibold tracking-tight">Close the Distance</span>
-        </div>
+        </Link>
 
         <div className="mb-1 flex justify-center">
           <Mascot mood={meta.mood} size={116} />
@@ -2382,10 +2383,10 @@ function IntakeShell({ step, children }: { step: number; children: React.ReactNo
       {/* Rail — mobile header band */}
       <div className="bg-gradient-to-b from-[#3b2a40] to-[#5a3f54] px-5 pb-5 pt-6 text-white lg:hidden">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[#f3c9d4]">
+          <Link href="/" className="flex items-center gap-2 text-[#f3c9d4]" title="Back to the journal">
             <HeartGap />
             <span className="font-display text-base font-semibold tracking-tight">Close the Distance</span>
-          </div>
+          </Link>
           <span className="text-xs text-[#d7c4cd]">
             Step {step} / {INTAKE_STEPS}
           </span>

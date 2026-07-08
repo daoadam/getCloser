@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Fraunces } from "next/font/google";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,6 +16,8 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
+  // Makes every relative canonical/OG URL below (and in child pages) absolute.
+  metadataBase: new URL(SITE_URL),
   title: "Close the Distance — Can you afford to move in together?",
   description:
     "A free simulator for couples living apart. See exactly what moving in together costs, where in the world you can afford to live, and how long until you can close the distance.",
@@ -31,6 +34,10 @@ export const metadata: Metadata = {
     description:
       "See what moving in together actually costs, and where you two can afford to live.",
     type: "website",
+    siteName: "Close the Distance",
+  },
+  twitter: {
+    card: "summary_large_image",
   },
 };
 

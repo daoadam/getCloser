@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import Mascot from "../../Mascot";
 import ReadProgress from "../ReadProgress";
 import { getAllPosts, getPost, getPostSlugs, formatDate, type PostMeta } from "@/lib/blog";
+import { SITE_URL, SITE_NAME } from "@/lib/site";
+import { TAG_STYLE, TAG_FALLBACK } from "@/lib/tags";
 
 // Pip signs every post off differently — picked by slug hash so it's stable
 // per-post but varies across the journal.
@@ -51,15 +53,6 @@ export async function generateMetadata({
     },
   };
 }
-
-// Topic chip colours — kept in lockstep with the homepage grid.
-const TAG_STYLE: Record<string, { bg: string; fg: string }> = {
-  money: { bg: "#e9f5ee", fg: "#1f6b46" },
-  "real talk": { bg: "#efe9f3", fg: "#6d4a7c" },
-  games: { bg: "#eef1fb", fg: "#4a5aa8" },
-  streaming: { bg: "#fbeee6", fg: "#b0642e" },
-  fun: { bg: "#fdf0f3", fg: "#b25c72" },
-};
 
 // Every post gets a hero band tinted by its first tag — Pip mid-flight over a
 // soft gradient — so no article ever opens as a bare wall of text.
@@ -138,8 +131,29 @@ export default async function BlogPostPage({
   if (!post) notFound();
   const related = relatedPosts(post);
 
+  // Article structured data — tells search engines who wrote what, when.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.excerpt,
+    datePublished: post.date || undefined,
+    author: { "@type": "Person", name: post.author },
+    publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+    keywords: post.tags.join(", "),
+    url: `${SITE_URL}/blog/${post.slug}`,
+    mainEntityOfPage: `${SITE_URL}/blog/${post.slug}`,
+  };
+
   return (
     <main className="min-h-full bg-[#faf6f1] pb-20">
+      <script
+        type="application/ld+json"
+        // Escape "<" so post titles can never close the script tag early.
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       <ReadProgress />
       {/* ── Top bar ─────────────────────────────────────────── */}
       <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#efe8df] bg-white/90 px-5 py-3.5 backdrop-blur sm:px-14">
@@ -155,7 +169,33 @@ export default async function BlogPostPage({
         </Link>
       </div>
 
-      <article className="mx-auto max-w-[680px] px-5 py-10 sm:px-8 sm:py-14">
+      <div className="mx-auto grid max-w-[1020px] gap-10 px-5 py-10 sm:px-8 sm:py-14 lg:grid-cols-[200px_minmax(0,680px)] lg:justify-center">
+        {/* ── Skip to section (desktop rail) ─────────────────── */}
+        {post.headings.length > 1 && (
+          <nav
+            aria-label="Skip to section"
+            className="hidden lg:block lg:sticky lg:top-24 lg:self-start"
+          >
+            <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#a89aa2]">
+              in this post
+            </div>
+            <div className="mt-3">
+              {post.headings.map((h) => (
+                <a key={h.id} href={`#${h.id}`} className="toc-link">
+                  {h.text}
+                </a>
+              ))}
+            </div>
+            <Link
+              href="/calculator"
+              className="mt-5 block rounded-xl bg-[#b25c72]/10 px-3 py-2.5 text-center text-[12px] font-semibold text-[#b25c72] transition hover:bg-[#b25c72]/15"
+            >
+              run your numbers →
+            </Link>
+          </nav>
+        )}
+
+        <article className="min-w-0">
         {/* ── Post header ───────────────────────────────────── */}
         <div className="flex flex-wrap items-center gap-2.5 text-[12.5px] font-medium text-[#9a8f96]">
           <span>{formatDate(post.date)}</span>
@@ -164,7 +204,7 @@ export default async function BlogPostPage({
           <span aria-hidden>·</span>
           <span>By {post.author}</span>
           {post.tags.map((t) => {
-            const s = TAG_STYLE[t] ?? { bg: "#f1ebe2", fg: "#6b6068" };
+            const s = TAG_STYLE[t] ?? TAG_FALLBACK;
             return (
               <span
                 key={t}
@@ -182,6 +222,22 @@ export default async function BlogPostPage({
 
         {/* ── Hero band ─────────────────────────────────────── */}
         <PostHero post={post} />
+
+        {/* ── Jump to section (mobile) ──────────────────────── */}
+        {post.headings.length > 1 && (
+          <details className="mt-6 rounded-[14px] border border-[#ece5db] bg-white px-4 py-3 lg:hidden">
+            <summary className="cursor-pointer text-[13px] font-semibold text-[#b25c72]">
+              jump to a section
+            </summary>
+            <div className="mt-2 pb-1">
+              {post.headings.map((h) => (
+                <a key={h.id} href={`#${h.id}`} className="toc-link">
+                  {h.text}
+                </a>
+              ))}
+            </div>
+          </details>
+        )}
 
         {/* ── Body ──────────────────────────────────────────── */}
         <div
@@ -222,7 +278,7 @@ export default async function BlogPostPage({
             </div>
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               {related.map((p) => {
-                const s = TAG_STYLE[p.tags[0]] ?? { bg: "#f1ebe2", fg: "#6b6068" };
+                const s = TAG_STYLE[p.tags[0]] ?? TAG_FALLBACK;
                 return (
                   <Link
                     key={p.slug}
@@ -247,7 +303,8 @@ export default async function BlogPostPage({
             </div>
           </div>
         )}
-      </article>
+        </article>
+      </div>
     </main>
   );
 }

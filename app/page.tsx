@@ -3,6 +3,7 @@ import Link from "next/link";
 import Mascot from "./Mascot";
 import { getAllPosts, formatDate, type PostMeta } from "@/lib/blog";
 import { getIgPhotos, type IgPhoto } from "@/lib/ig";
+import { TAG_STYLE, TAG_FALLBACK } from "@/lib/tags";
 
 // The homepage is the Journal — a server component that reads the Markdown
 // posts at build time. Newest post gets the big featured card; the rest flow
@@ -47,17 +48,8 @@ function HeartGap({ stroke = "currentColor" }: { stroke?: string }) {
   );
 }
 
-// Each topic gets its own chip colour so the grid reads like a zine, not a ledger.
-const TAG_STYLE: Record<string, { bg: string; fg: string }> = {
-  money: { bg: "#e9f5ee", fg: "#1f6b46" },
-  "real talk": { bg: "#efe9f3", fg: "#6d4a7c" },
-  games: { bg: "#eef1fb", fg: "#4a5aa8" },
-  streaming: { bg: "#fbeee6", fg: "#b0642e" },
-  fun: { bg: "#fdf0f3", fg: "#b25c72" },
-};
-
 function TagChip({ tag }: { tag: string }) {
-  const s = TAG_STYLE[tag] ?? { bg: "#f1ebe2", fg: "#6b6068" };
+  const s = TAG_STYLE[tag] ?? TAG_FALLBACK;
   return (
     <span
       className="rounded-full px-2.5 py-1 text-[11px] font-bold lowercase tracking-wide"

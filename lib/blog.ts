@@ -31,7 +31,18 @@ export type PostMeta = {
   readingMinutes: number;
 };
 
-export type Post = PostMeta & { html: string };
+export type Heading = { id: string; text: string };
+
+export type Post = PostMeta & { html: string; headings: Heading[] };
+
+// Matches the id generation in the heading renderer below.
+export function slugifyHeading(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .trim()
+    .replace(/[\s_]+/g, "-");
+}
 
 marked.setOptions({ gfm: true, breaks: false });
 
@@ -45,6 +56,8 @@ marked.setOptions({ gfm: true, breaks: false });
 //   > ❝ quotable line          → big Fraunces pull-quote
 //   > 📊 $360 | = one flight   → big-stat block (value | label)
 //   > 🐦 4/5 | verdict text    → Pip rating: a row of birds, filled to n of 5
+//   > 📷 what the photo will be → dashed "photo goes here" placeholder; swap it
+//                                 for a real ![alt](/blog/x.jpg "caption") later
 //
 // Images render as <figure> with the title text as a caption:
 //   ![alt](/blog/pic.jpg "what we were playing")
@@ -71,6 +84,11 @@ marked.use({
         // "📊 value | label" — big number with a small explanation under it.
         const [value, ...label] = raw.replace("📊", "").split("|");
         return `<div class="statblock"><div class="statblock-value">${value.trim()}</div><div class="statblock-label">${label.join("|").trim()}</div></div>\n`;
+      }
+      if (raw.startsWith("📷")) {
+        // A designed "photo goes here" slot — swap for a real image later.
+        const note = raw.replace("📷", "").trim();
+        return `<div class="photo-slot"><span class="photo-slot-icon" aria-hidden>📷</span><span class="photo-slot-note">${note}</span></div>\n`;
       }
       if (raw.startsWith("🐦")) {
         // "🐦 4/5 | verdict" — n filled Pips out of 5, with a verdict line.
@@ -101,8 +119,27 @@ marked.use({
         : "";
       return `<figure class="prose-figure"><img src="${token.href}" alt="${token.text ?? ""}" loading="lazy" />${caption}</figure>`;
     },
+    heading(token) {
+      // Anchor ids on h2/h3 so the table of contents can deep-link.
+      const text = this.parser.parseInline(token.tokens);
+      const plain = token.text.replace(/[*_`~]/g, "");
+      return `<h${token.depth} id="${slugifyHeading(plain)}">${text}</h${token.depth}>\n`;
+    },
   },
 });
+
+// The h2s of a post, in order — powers the "skip to section" rail.
+export function extractHeadings(markdown: string): Heading[] {
+  const headings: Heading[] = [];
+  for (const line of markdown.split("\n")) {
+    const m = line.match(/^##\s+(.+)$/);
+    if (m) {
+      const text = m[1].replace(/[*_`~]/g, "").trim();
+      headings.push({ id: slugifyHeading(text), text });
+    }
+  }
+  return headings;
+}
 
 function readFile(slug: string): matter.GrayMatterFile<string> | null {
   const file = path.join(POSTS_DIR, `${slug}.md`);
@@ -153,6 +190,7 @@ export function getPost(slug: string): Post | null {
   return {
     ...toMeta(slug, parsed),
     html: marked.parse(parsed.content) as string,
+    headings: extractHeadings(parsed.content),
   };
 }
 
