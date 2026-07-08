@@ -1,20 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Mascot from "./Mascot";
-import CoverArt from "./CoverArt";
-import RevealFx from "./RevealFx";
-import { getAllPosts, formatDate, type PostMeta } from "@/lib/blog";
+import FeedClient from "./FeedClient";
+import EmailCapture from "./EmailCapture";
+import { getAllPosts } from "@/lib/blog";
 import { getIgPhotos, type IgPhoto } from "@/lib/ig";
-import { TAG_STYLE, TAG_FALLBACK } from "@/lib/tags";
 
 // The homepage is the Journal — a server component that reads the Markdown
-// posts at build time. Newest post gets the big featured card; the rest flow
-// into a grid, with the calculator promo card mixed in like it's one of the
-// posts. The calculator itself lives at /calculator.
+// posts at build time and hands them to FeedClient for searchable, taggable,
+// GSAP-animated browsing. The calculator itself lives at /calculator.
 //
 // The right-hand column is the "ad rail" — a parody of the ad-stuffed sidebar
 // every old blog has, except every "ad" is ours: the calculator sold like a
-// scammy banner, and polaroids of the two of us as the sponsored content.
+// scammy banner, polaroids of the two of us, and the newsletter.
 // Photos auto-load from public/ig (see lib/ig.ts).
 
 export const metadata: Metadata = {
@@ -47,121 +45,6 @@ function HeartGap({ stroke = "currentColor" }: { stroke?: string }) {
         strokeLinecap="round"
       />
     </svg>
-  );
-}
-
-function TagChip({ tag }: { tag: string }) {
-  const s = TAG_STYLE[tag] ?? TAG_FALLBACK;
-  return (
-    <span
-      className="rounded-full px-2.5 py-1 text-[11px] font-bold lowercase tracking-wide"
-      style={{ background: s.bg, color: s.fg }}
-    >
-      {tag}
-    </span>
-  );
-}
-
-function PostMetaLine({ post }: { post: PostMeta }) {
-  return (
-    <div className="flex flex-wrap items-center gap-2.5 text-[12px] font-medium text-[#7d727a]">
-      <span>{formatDate(post.date)}</span>
-      <span aria-hidden>·</span>
-      <span>{post.readingMinutes} min read</span>
-      {post.tags.map((t) => (
-        <TagChip key={t} tag={t} />
-      ))}
-    </div>
-  );
-}
-
-// The newest post — full-width, with a big serif title and a rosy wash.
-function FeaturedCard({ post }: { post: PostMeta }) {
-  return (
-    <Link
-      href={`/blog/${post.slug}`}
-      className="group relative block overflow-hidden rounded-[24px] border border-[#ece5db] bg-white p-7 transition hover:border-[#b25c72]/40 hover:shadow-[0_10px_36px_-14px_rgba(178,92,114,0.45)] sm:p-10"
-    >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(90% 90% at 85% 0%, rgba(178,92,114,0.10), transparent 55%)",
-        }}
-      />
-      <div className="relative grid gap-6 sm:grid-cols-[1fr_230px] sm:items-center">
-        <div>
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#b25c72] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-white">
-            ✷ latest
-          </div>
-          <PostMetaLine post={post} />
-          <h2 className="mt-3 max-w-[620px] font-display text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] text-[#2b2329] transition-colors group-hover:text-[#b25c72] sm:text-[38px]">
-            {post.title}
-          </h2>
-          <p className="mt-3 max-w-[560px] text-[15px] leading-relaxed text-[#6b6068]">
-            {post.excerpt}
-          </p>
-          <span className="mt-4 inline-block text-[14px] font-semibold text-[#b25c72]">
-            Read it →
-          </span>
-        </div>
-        <CoverArt post={post} height={190} pip={72} className="hidden sm:flex" />
-      </div>
-    </Link>
-  );
-}
-
-function PostCard({ post, tilt }: { post: PostMeta; tilt: number }) {
-  return (
-    <Link
-      href={`/blog/${post.slug}`}
-      className="group relative block h-full rounded-[20px] border border-[#ece5db] bg-white p-6 transition hover:-translate-y-0.5 hover:border-[#b25c72]/40 hover:shadow-[0_8px_28px_-12px_rgba(178,92,114,0.4)] sm:p-7"
-      style={{ transform: `rotate(${tilt}deg)` }}
-    >
-      {/* the corkboard pin */}
-      <span
-        aria-hidden
-        className="absolute -top-1.5 left-1/2 h-3.5 w-3.5 -translate-x-1/2 rounded-full border-2 border-white bg-[#b25c72] shadow-[0_2px_4px_rgba(43,35,41,0.35)]"
-      />
-      <CoverArt post={post} className="mb-4" />
-      <PostMetaLine post={post} />
-      <h2 className="mt-2.5 font-display text-[21px] font-semibold leading-tight tracking-[-0.01em] text-[#2b2329] transition-colors group-hover:text-[#b25c72] sm:text-[23px]">
-        {post.title}
-      </h2>
-      <p className="mt-2 text-[14px] leading-relaxed text-[#6b6068]">{post.excerpt}</p>
-      <span className="mt-3 inline-block text-[13.5px] font-semibold text-[#b25c72]">
-        Read more →
-      </span>
-    </Link>
-  );
-}
-
-// The calculator, disguised as a post card and shuffled into the grid — the
-// tool is part of the story, not a banner ad on top of it.
-function CalculatorCard() {
-  return (
-    <Link
-      href="/calculator"
-      className="group flex h-full flex-col justify-between rounded-[20px] border border-[#b25c72]/25 bg-[#b25c72] p-6 text-white transition hover:-translate-y-0.5 hover:shadow-[0_12px_36px_-12px_rgba(178,92,114,0.8)] sm:p-7"
-      style={{ transform: "rotate(0.4deg)" }}
-    >
-      <div>
-        <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.08em] text-white/80">
-          <HeartGap stroke="rgba(255,255,255,0.8)" /> the tool
-        </div>
-        <h2 className="mt-2.5 font-display text-[22px] font-semibold leading-tight sm:text-[24px]">
-          Can you two actually afford to move in together?
-        </h2>
-        <p className="mt-2 text-[14px] leading-relaxed text-white/85">
-          The whole reason this site exists: put in your two cities and your two incomes, get the
-          honest verdict — the cost, the timeline, the everything. Free, no sign-up.
-        </p>
-      </div>
-      <span className="mt-4 inline-flex items-center gap-1.5 self-start rounded-xl bg-white px-4 py-2.5 text-[13.5px] font-bold text-[#b25c72] transition group-hover:gap-2.5">
-        Run your numbers →
-      </span>
-    </Link>
   );
 }
 
@@ -217,7 +100,7 @@ function Polaroid({ photo, tilt }: { photo: IgPhoto; tilt: number }) {
   );
 }
 
-// The whole rail: fake ad up top, then "us" polaroids, then the honest gag.
+// The whole rail: fake ad, "us" polaroids, the newsletter, the honest gag.
 function AdRail({ photos }: { photos: IgPhoto[] }) {
   const tilts = [-1.6, 1.2, -0.8, 1.6, -1.2, 0.9];
   return (
@@ -254,6 +137,28 @@ function AdRail({ photos }: { photos: IgPhoto[] }) {
             </figure>
           )}
         </div>
+        <Link
+          href="/about"
+          className="mt-3 block text-center text-[12px] font-semibold text-[#b25c72] hover:underline"
+        >
+          who are these people? →
+        </Link>
+      </div>
+
+      {/* the newsletter — the one "ad" that's a genuine ask */}
+      <div className="rounded-[16px] border border-[#ece5db] bg-white p-5">
+        <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#a89aa2]">
+          the newsletter
+        </div>
+        <div className="mt-1 font-display text-[16px] font-semibold text-[#2b2329]">
+          hear it when we close the distance
+        </div>
+        <p className="mt-1.5 text-[12px] leading-relaxed text-[#7d727a]">
+          new posts, and eventually the big one. no spam, ever.
+        </p>
+        <div className="mt-3">
+          <EmailCapture source="homepage-rail" buttonLabel="Join →" compact />
+        </div>
       </div>
 
       <div className="rounded-[16px] border border-[#ece5db] bg-white p-5 text-center">
@@ -271,9 +176,6 @@ function AdRail({ photos }: { photos: IgPhoto[] }) {
 export default function HomeJournalPage() {
   const posts = getAllPosts();
   const photos = getIgPhotos();
-  const [featured, ...rest] = posts;
-  // Alternating tilts make the grid feel hand-pinned, corkboard-style.
-  const tilts = [-1.2, 1.05, -0.9, 1.2, -1.05, 0.9];
 
   return (
     <main className="min-h-full bg-[#faf6f1] pb-20">
@@ -285,12 +187,20 @@ export default function HomeJournalPage() {
             Close the Distance
           </span>
         </Link>
-        <Link
-          href="/calculator"
-          className="rounded-xl bg-[#b25c72] px-4 py-2 text-[13.5px] font-semibold text-white transition hover:brightness-105"
-        >
-          Open the calculator →
-        </Link>
+        <div className="flex items-center gap-5">
+          <Link
+            href="/about"
+            className="hidden text-[13.5px] font-medium text-[#6b6068] transition hover:text-[#b25c72] sm:inline"
+          >
+            About us
+          </Link>
+          <Link
+            href="/calculator"
+            className="rounded-xl bg-[#b25c72] px-4 py-2 text-[13.5px] font-semibold text-white transition hover:brightness-105"
+          >
+            Open the calculator →
+          </Link>
+        </div>
       </div>
 
       {/* ── The love ticker ─────────────────────────────────── */}
@@ -356,42 +266,17 @@ export default function HomeJournalPage() {
         </div>
 
         {/* ── Content + ad rail ─────────────────────────────── */}
-        <RevealFx className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_270px]">
+        <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_270px]">
           <div>
-            {/* ── Featured ──────────────────────────────────── */}
-            {featured ? (
-              <div data-reveal>
-                <FeaturedCard post={featured} />
-              </div>
-            ) : (
-              <p className="text-[15px] text-[#6b6068]">No posts yet — check back soon.</p>
-            )}
-
             {/* mobile-only: the fake ad lives in the feed, where it's seen */}
-            <div className="mt-5 lg:hidden" data-reveal>
+            <div className="mb-5 lg:hidden">
               <CalculatorFakeAd />
             </div>
-
-            {/* ── The rest + the tool card ──────────────────── */}
-            <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
-              {rest.slice(0, 2).map((post, i) => (
-                <div key={post.slug} data-reveal className="h-full">
-                  <PostCard post={post} tilt={tilts[i % tilts.length]} />
-                </div>
-              ))}
-              <div data-reveal className="h-full">
-                <CalculatorCard />
-              </div>
-              {rest.slice(2).map((post, i) => (
-                <div key={post.slug} data-reveal className="h-full">
-                  <PostCard post={post} tilt={tilts[(i + 2) % tilts.length]} />
-                </div>
-              ))}
-            </div>
+            <FeedClient posts={posts} />
           </div>
 
           <AdRail photos={photos} />
-        </RevealFx>
+        </div>
 
         {/* ── Sign-off ──────────────────────────────────────── */}
         <div className="mt-14 flex flex-col items-center gap-2 text-center">
@@ -401,9 +286,11 @@ export default function HomeJournalPage() {
             something&rsquo;s actually worth saying.
           </p>
           <div className="mt-2 flex gap-5 text-[12.5px] text-[#7d727a]">
+            <Link href="/about" className="hover:text-[#b25c72]">About</Link>
             <Link href="/methodology" className="hover:text-[#b25c72]">Methodology</Link>
             <Link href="/privacy" className="hover:text-[#b25c72]">Privacy</Link>
             <Link href="/terms" className="hover:text-[#b25c72]">Terms</Link>
+            <a href="/feed.xml" className="hover:text-[#b25c72]">RSS</a>
           </div>
         </div>
       </div>

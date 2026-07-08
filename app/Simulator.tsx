@@ -7,6 +7,7 @@ import { CostLine, fmt, Housing, Lifestyle, Location, relocationFor, simulate } 
 import { AU_STATES, COUNTRIES_BY_REGION, getCountry, REGION_LABEL } from "@/lib/countries";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { CURRENCY_OPTIONS, toAUD, useRates } from "@/lib/rates";
+import EmailCapture from "./EmailCapture";
 import MapPicker from "./MapPicker";
 import Mascot, { Mood } from "./Mascot";
 import Landing from "./Landing";
@@ -370,6 +371,17 @@ export default function Simulator() {
   const next = () => setStep((s) => Math.min(s + 1, RESULTS_STEP));
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
+  // Results are gated behind an email (captured once — returning visitors with
+  // a stored address skip straight through).
+  const [gatePassed, setGatePassed] = useState(false);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("ctd-email")) setGatePassed(true);
+    } catch {
+      /* private mode — gate shows, that's fine */
+    }
+  }, []);
+
   function pickCountry(c: string) {
     setDestCountry(c);
     setAreaQuery("");
@@ -394,6 +406,35 @@ export default function Simulator() {
           setStep(1);
         }}
       />
+    );
+  }
+
+  if (step === RESULTS_STEP && !gatePassed) {
+    return (
+      <main className="flex min-h-[100svh] flex-1 flex-col items-center justify-center bg-[#faf6f1] px-6 py-16 text-center">
+        <Mascot mood="happy" size={104} />
+        <h1 className="mt-5 font-display text-[32px] font-semibold tracking-[-0.02em] text-[#2b2329] sm:text-[40px]">
+          Your plan is ready 💌
+        </h1>
+        <p className="mt-3 max-w-[440px] text-[15.5px] leading-relaxed text-[#6b6068]">
+          Pop your email in and we&rsquo;ll open it up — plus you&rsquo;ll hear from us when we
+          publish something worth your time. No spam, no daily nudges, unsubscribe whenever.
+        </p>
+        <div className="mt-6 flex justify-center">
+          <EmailCapture
+            source="calculator-gate"
+            buttonLabel="Show my plan →"
+            failOpen
+            onDone={() => setGatePassed(true)}
+          />
+        </div>
+        <button
+          onClick={back}
+          className="mt-6 text-[13px] font-medium text-[#a59ca2] transition hover:text-[#b25c72]"
+        >
+          ← back to the last step
+        </button>
+      </main>
     );
   }
 

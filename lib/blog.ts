@@ -18,22 +18,14 @@ import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
 import { marked } from "marked";
+import type { PostMeta, Heading, Post } from "./post-meta";
+
+// Client-safe types + formatDate live in ./post-meta (no fs) — re-exported
+// here so server-side imports keep working unchanged.
+export { formatDate } from "./post-meta";
+export type { PostMeta, Heading, Post } from "./post-meta";
 
 const POSTS_DIR = path.join(process.cwd(), "content", "blog");
-
-export type PostMeta = {
-  slug: string;
-  title: string;
-  date: string; // ISO yyyy-mm-dd
-  excerpt: string;
-  author: string;
-  tags: string[]; // e.g. ["money"], ["games", "fun"] — rendered as chips
-  readingMinutes: number;
-};
-
-export type Heading = { id: string; text: string };
-
-export type Post = PostMeta & { html: string; headings: Heading[] };
 
 // Matches the id generation in the heading renderer below.
 export function slugifyHeading(text: string): string {
@@ -192,16 +184,4 @@ export function getPost(slug: string): Post | null {
     html: marked.parse(parsed.content) as string,
     headings: extractHeadings(parsed.content),
   };
-}
-
-// "1 July 2026" — friendly, unambiguous, matches the editorial voice.
-export function formatDate(iso: string): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-AU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
 }

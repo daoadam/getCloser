@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Mascot from "../../Mascot";
+import EmailCapture from "../../EmailCapture";
 import ReadProgress from "../ReadProgress";
 import { getAllPosts, getPost, getPostSlugs, formatDate, type PostMeta } from "@/lib/blog";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
@@ -269,6 +270,19 @@ export default async function BlogPostPage({
         <p className="mt-6 text-center text-[12px] italic text-[#a89aa2]">
           {pipQuip(post.slug)}
         </p>
+
+        {/* ── Newsletter ────────────────────────────────────── */}
+        <div className="mt-8 flex flex-col items-center rounded-[18px] border border-[#ece5db] bg-white p-6 text-center">
+          <div className="font-display text-[18px] font-semibold text-[#2b2329]">
+            liked this? there&rsquo;s more coming
+          </div>
+          <p className="mt-1 max-w-[380px] text-[13px] leading-relaxed text-[#7d727a]">
+            new posts and, one day, the &ldquo;we did it&rdquo; email. no spam, ever.
+          </p>
+          <div className="mt-3 flex justify-center">
+            <EmailCapture source="post-footer" buttonLabel="Join →" compact />
+          </div>
+        </div>
 
         {/* ── Keep reading ──────────────────────────────────── */}
         {related.length > 0 && (
