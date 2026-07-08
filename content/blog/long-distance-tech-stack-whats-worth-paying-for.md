@@ -26,8 +26,22 @@ honestly if you're doing LDR without a dedicated discord server for just you two
 
 **watch-together tools:** Teleparty and co. are fine, but real talk — discord screen share with decent quality killed most of our need for dedicated watch-party apps. one person hosts, one watches, you both live-react in voice. free.
 
+## the scoreboard
+
+| app | verdict | the test |
+|---|---|---|
+| Discord | **free carries** | is your server basically your apartment? |
+| Crunchyroll | worth it | is anime night *scheduled*? |
+| Spotify Duo | sneaky good | blend playlists = free intimacy |
+| Netflix | audit it | one watch-night a week minimum, or downgrade |
+| watch-party apps | skip | discord screen share already does this |
+
 ## the one that outranks all of them
 
-the flight fund. every app above, we judge by the same rule: **anything that isn't earning its place gets cancelled, and the money goes to the "same city" fund.** a couple of trimmed subs is ~$30/month. that's $360 a year — which, depending on where you two are, is literally a flight.
+the flight fund. every app above, we judge by the same rule: **anything that isn't earning its place gets cancelled, and the money goes to the "same city" fund.** a couple of trimmed subs is ~$30/month.
+
+> 📊 $360/yr | what two trimmed subscriptions become — aka one flight home
+
+> 💸 the rule that changed everything for us: every subscription renewal is a tiny vote between "comfortable apart" and "together sooner." vote deliberately.
 
 and when you want to know the *whole* number — what it actually takes to stop needing the watch-together apps entirely — that's the exact thing our calculator does. it's free, which by this post's standards makes it infinite value for money.

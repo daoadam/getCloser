@@ -35,6 +35,60 @@ export type Post = PostMeta & { html: string };
 
 marked.setOptions({ gfm: true, breaks: false });
 
+// ── Rich components via markdown conventions ────────────────────────────────
+// Authors write plain markdown; a leading marker on a blockquote turns it into
+// a designed component (styles live next to .prose-blog in globals.css):
+//
+//   > pip's take: …            → Pip speech bubble (default for any blockquote)
+//   > 💸 money note            → green money callout
+//   > ⚠️ real talk             → amber warning callout
+//   > ❝ quotable line          → big Fraunces pull-quote
+//   > 📊 $360 | = one flight   → big-stat block (value | label)
+//
+// Images render as <figure> with the title text as a caption:
+//   ![alt](/blog/pic.jpg "what we were playing")
+
+// A tiny inline Pip (head + cheek + beak) for the speech bubbles — a
+// lightweight echo of app/Mascot.tsx, kept as a string so the renderer can
+// inline it without React.
+const PIP_MINI = `<svg viewBox="0 0 48 48" width="34" height="34" aria-hidden="true"><circle cx="24" cy="26" r="18" fill="#e89aa6"/><path d="M10 22 C10 10 20 6 26 8 C24 12 24 14 26 16 C20 16 14 18 10 22 Z" fill="#d2748a"/><circle cx="30" cy="24" r="2.6" fill="#2b2329"/><circle cx="18" cy="29" r="4" fill="#f4adb8"/><path d="M36 26 q6 2 4 7 q-4 -1 -7 -4 Z" fill="#e9a23f"/></svg>`;
+
+function stripOnce(html: string, marker: string): string {
+  return html.replace(marker, "");
+}
+
+marked.use({
+  renderer: {
+    blockquote(token) {
+      const raw = token.text.trim();
+      const html = this.parser.parse(token.tokens);
+
+      if (raw.startsWith("❝")) {
+        return `<figure class="pullquote">${stripOnce(html, "❝").trim()}</figure>\n`;
+      }
+      if (raw.startsWith("📊")) {
+        // "📊 value | label" — big number with a small explanation under it.
+        const [value, ...label] = raw.replace("📊", "").split("|");
+        return `<div class="statblock"><div class="statblock-value">${value.trim()}</div><div class="statblock-label">${label.join("|").trim()}</div></div>\n`;
+      }
+      if (raw.startsWith("💸")) {
+        return `<aside class="pip-note pip-note--money">${stripOnce(html, "💸")}</aside>\n`;
+      }
+      if (raw.startsWith("⚠️")) {
+        return `<aside class="pip-note pip-note--warn">${stripOnce(html, "⚠️")}</aside>\n`;
+      }
+      // Default blockquote = Pip has something to say.
+      return `<aside class="pip-note"><span class="pip-note-bird">${PIP_MINI}</span><div class="pip-note-body">${html}</div></aside>\n`;
+    },
+    image(token) {
+      const caption = token.title
+        ? `<figcaption>${token.title}</figcaption>`
+        : "";
+      return `<figure class="prose-figure"><img src="${token.href}" alt="${token.text ?? ""}" loading="lazy" />${caption}</figure>`;
+    },
+  },
+});
+
 function readFile(slug: string): matter.GrayMatterFile<string> | null {
   const file = path.join(POSTS_DIR, `${slug}.md`);
   if (!fs.existsSync(file)) return null;

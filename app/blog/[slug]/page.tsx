@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Mascot from "../../Mascot";
-import { getPost, getPostSlugs, formatDate } from "@/lib/blog";
+import { getAllPosts, getPost, getPostSlugs, formatDate, type PostMeta } from "@/lib/blog";
 
 // A single journal post. Server component: reads and renders the Markdown at
 // build time, one static page per slug. `params` is a Promise in this version
@@ -44,6 +44,54 @@ const TAG_STYLE: Record<string, { bg: string; fg: string }> = {
   fun: { bg: "#fdf0f3", fg: "#b25c72" },
 };
 
+// Every post gets a hero band tinted by its first tag — Pip mid-flight over a
+// soft gradient — so no article ever opens as a bare wall of text.
+function PostHero({ post }: { post: PostMeta }) {
+  const s = TAG_STYLE[post.tags[0]] ?? { bg: "#fdf0f3", fg: "#b25c72" };
+  return (
+    <div
+      className="relative mt-7 flex items-center justify-center overflow-hidden rounded-[20px] border border-[#ece5db] py-9"
+      style={{
+        background: `linear-gradient(120deg, ${s.bg}, #fdfbf8 60%, ${s.bg})`,
+      }}
+      aria-hidden
+    >
+      {/* the flight path — same dashed-arc language as the calculator */}
+      <svg
+        viewBox="0 0 320 80"
+        className="absolute inset-x-0 mx-auto w-[320px] opacity-60"
+      >
+        <path
+          d="M20 62 Q160 -14 300 62"
+          fill="none"
+          stroke={s.fg}
+          strokeWidth="2"
+          strokeDasharray="3 8"
+          strokeLinecap="round"
+          className="flightline"
+        />
+        <circle cx="20" cy="62" r="4" fill={s.fg} />
+        <circle cx="300" cy="62" r="4" fill={s.fg} />
+      </svg>
+      <Mascot mood="happy" size={74} className="relative" />
+    </div>
+  );
+}
+
+// Two more posts, picked by tag overlap (falling back to recency) — the page
+// shouldn't be a dead end.
+function relatedPosts(current: PostMeta): PostMeta[] {
+  return getAllPosts()
+    .filter((p) => p.slug !== current.slug)
+    .map((p) => ({
+      post: p,
+      score: p.tags.filter((t) => current.tags.includes(t)).length,
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2)
+    .map(({ post }) => post);
+}
+
 function HeartGap({ stroke = "currentColor" }: { stroke?: string }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -71,6 +119,7 @@ export default async function BlogPostPage({
   const { slug } = await params;
   const post = getPost(slug);
   if (!post) notFound();
+  const related = relatedPosts(post);
 
   return (
     <main className="min-h-full bg-[#faf6f1] pb-20">
@@ -113,6 +162,9 @@ export default async function BlogPostPage({
           {post.title}
         </h1>
 
+        {/* ── Hero band ─────────────────────────────────────── */}
+        <PostHero post={post} />
+
         {/* ── Body ──────────────────────────────────────────── */}
         <div
           className="prose-blog mt-8"
@@ -138,6 +190,40 @@ export default async function BlogPostPage({
             Start the calculator →
           </Link>
         </div>
+
+        {/* ── Keep reading ──────────────────────────────────── */}
+        {related.length > 0 && (
+          <div className="mt-12">
+            <div className="text-[13px] font-bold uppercase tracking-[0.1em] text-[#b25c72]">
+              keep reading
+            </div>
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {related.map((p) => {
+                const s = TAG_STYLE[p.tags[0]] ?? { bg: "#f1ebe2", fg: "#6b6068" };
+                return (
+                  <Link
+                    key={p.slug}
+                    href={`/blog/${p.slug}`}
+                    className="group rounded-[18px] border border-[#ece5db] bg-white p-5 transition hover:border-[#b25c72]/40 hover:shadow-[0_6px_24px_-12px_rgba(178,92,114,0.35)]"
+                  >
+                    <div className="flex items-center gap-2 text-[11.5px] font-medium text-[#7d727a]">
+                      <span
+                        className="rounded-full px-2 py-0.5 text-[10.5px] font-bold lowercase"
+                        style={{ background: s.bg, color: s.fg }}
+                      >
+                        {p.tags[0] ?? "journal"}
+                      </span>
+                      <span>{p.readingMinutes} min read</span>
+                    </div>
+                    <div className="mt-2 font-display text-[17.5px] font-semibold leading-snug text-[#2b2329] transition-colors group-hover:text-[#b25c72]">
+                      {p.title}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </article>
     </main>
   );

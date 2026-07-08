@@ -21,6 +21,8 @@ When we finally sat down and listed everything, the rent wasn't the scary part. 
 
 None of these are dramatic on their own. Together, they're the reason "someday" stays "someday."
 
+> ❝ a pile of costs you can see has an end. "someday" doesn't.
+
 ## Why we built a tool instead of a spreadsheet
 
 We tried the spreadsheet. Twice. It always died the same way: one of us would change a number, the other couldn't see it, and we'd give up before we got to an answer.
@@ -28,6 +30,8 @@ We tried the spreadsheet. Twice. It always died the same way: one of us would ch
 So the tool does the boring part. You put in where you both are, where you'd want to land, and what you've each got — and it lays out the whole picture in one place: rent *and* the option to buy, the relocation, the visa, the buffer for the months in between, and roughly how long until it's actually doable.
 
 The point isn't a perfect number. It's a number you can *look at together* without flinching — and then argue about, adjust, and turn into a plan.
+
+> pip's take: the spreadsheet died twice because it lived on one person's laptop. the plan has to belong to *both* of you.
 
 ## The honest part
 

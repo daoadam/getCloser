@@ -70,7 +70,7 @@ function TagChip({ tag }: { tag: string }) {
 
 function PostMetaLine({ post }: { post: PostMeta }) {
   return (
-    <div className="flex flex-wrap items-center gap-2.5 text-[12px] font-medium text-[#9a8f96]">
+    <div className="flex flex-wrap items-center gap-2.5 text-[12px] font-medium text-[#7d727a]">
       <span>{formatDate(post.date)}</span>
       <span aria-hidden>·</span>
       <span>{post.readingMinutes} min read</span>
@@ -119,9 +119,14 @@ function PostCard({ post, tilt }: { post: PostMeta; tilt: number }) {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group rounded-[20px] border border-[#ece5db] bg-white p-6 transition hover:-translate-y-0.5 hover:border-[#b25c72]/40 hover:shadow-[0_8px_28px_-12px_rgba(178,92,114,0.4)] sm:p-7"
+      className="group relative rounded-[20px] border border-[#ece5db] bg-white p-6 transition hover:-translate-y-0.5 hover:border-[#b25c72]/40 hover:shadow-[0_8px_28px_-12px_rgba(178,92,114,0.4)] sm:p-7"
       style={{ transform: `rotate(${tilt}deg)` }}
     >
+      {/* the corkboard pin */}
+      <span
+        aria-hidden
+        className="absolute -top-1.5 left-1/2 h-3.5 w-3.5 -translate-x-1/2 rounded-full border-2 border-white bg-[#b25c72] shadow-[0_2px_4px_rgba(43,35,41,0.35)]"
+      />
       <PostMetaLine post={post} />
       <h2 className="mt-2.5 font-display text-[21px] font-semibold leading-tight tracking-[-0.01em] text-[#2b2329] transition-colors group-hover:text-[#b25c72] sm:text-[23px]">
         {post.title}
@@ -145,7 +150,7 @@ function CalculatorCard() {
     >
       <div>
         <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.08em] text-white/80">
-          the tool <span aria-hidden>🛠️</span>
+          <HeartGap stroke="rgba(255,255,255,0.8)" /> the tool
         </div>
         <h2 className="mt-2.5 font-display text-[22px] font-semibold leading-tight sm:text-[24px]">
           Can you two actually afford to move in together?
@@ -171,7 +176,7 @@ function CalculatorFakeAd() {
       href="/calculator"
       className="group block overflow-hidden rounded-[16px] border-2 border-dashed border-[#b25c72]/50 bg-white p-5 text-center transition hover:border-[#b25c72] hover:shadow-[0_8px_28px_-12px_rgba(178,92,114,0.5)]"
     >
-      <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c9bfc6]">
+      <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#a89aa2]">
         advertisement*
       </div>
       <div className="mt-2 font-display text-[19px] font-semibold leading-snug text-[#b25c72]">
@@ -183,7 +188,7 @@ function CalculatorFakeAd() {
       <span className="mt-3 inline-block rounded-xl bg-[#b25c72] px-4 py-2 text-[12.5px] font-bold text-white transition group-hover:brightness-105">
         CLICK NOW (it&rsquo;s genuinely free) →
       </span>
-      <div className="mt-2.5 text-[10px] italic text-[#c9bfc6]">
+      <div className="mt-2.5 text-[10px] italic text-[#a89aa2]">
         *it&rsquo;s our own tool. this is the only ad format we&rsquo;ll ever run.
       </div>
     </Link>
@@ -214,30 +219,21 @@ function Polaroid({ photo, tilt }: { photo: IgPhoto; tilt: number }) {
   );
 }
 
-// Shown until real photos land in public/ig — an honest placeholder, not a fake.
-function PolaroidPlaceholder({ label, tilt }: { label: string; tilt: number }) {
-  return (
-    <div
-      className="rounded-[6px] border border-dashed border-[#ddd0c1] bg-[#fdfbf8] p-2.5 pb-3"
-      style={{ transform: `rotate(${tilt}deg)` }}
-    >
-      <div className="flex aspect-square w-full items-center justify-center rounded-[3px] bg-[#f4efe8] text-3xl">
-        📷
-      </div>
-      <div className="mt-2 text-center text-[11.5px] lowercase text-[#b3a89f]">{label}</div>
-    </div>
-  );
-}
-
 // The whole rail: fake ad up top, then "us" polaroids, then the honest gag.
 function AdRail({ photos }: { photos: IgPhoto[] }) {
   const tilts = [-1.6, 1.2, -0.8, 1.6, -1.2, 0.9];
   return (
-    <aside className="flex flex-col gap-5" aria-label="Definitely real advertisements">
-      <CalculatorFakeAd />
+    <aside
+      className="flex flex-col gap-5 lg:sticky lg:top-[72px] lg:self-start"
+      aria-label="Our own ads — a parody sidebar"
+    >
+      {/* on mobile the fake ad renders inline near the top of the feed instead */}
+      <div className="hidden lg:block">
+        <CalculatorFakeAd />
+      </div>
 
       <div className="rounded-[16px] border border-[#ece5db] bg-white p-4">
-        <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#c9bfc6]">
+        <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#a89aa2]">
           sponsored by: us
         </div>
         <div className="mt-1 font-display text-[16px] font-semibold text-[#2b2329]">
@@ -247,10 +243,17 @@ function AdRail({ photos }: { photos: IgPhoto[] }) {
           {photos.length > 0 ? (
             photos.map((p, i) => <Polaroid key={p.src} photo={p} tilt={tilts[i % tilts.length]} />)
           ) : (
-            <>
-              <PolaroidPlaceholder label="photo of us loading…" tilt={-1.4} />
-              <PolaroidPlaceholder label="(as soon as we pick ones we like)" tilt={1.1} />
-            </>
+            <figure
+              className="rounded-[6px] border border-[#ece5db] bg-white p-2.5 pb-3 shadow-[0_4px_16px_-8px_rgba(43,35,41,0.25)]"
+              style={{ transform: "rotate(-1.4deg)" }}
+            >
+              <div className="flex aspect-square w-full items-center justify-center rounded-[3px] bg-[#fdf0f3]">
+                <Mascot mood="happy" size={92} />
+              </div>
+              <figcaption className="mt-2 text-center text-[11.5px] lowercase text-[#7d727a]">
+                us, artist&rsquo;s impression (real pics soon)
+              </figcaption>
+            </figure>
           )}
         </div>
       </div>
@@ -258,7 +261,7 @@ function AdRail({ photos }: { photos: IgPhoto[] }) {
       <div className="rounded-[16px] border border-[#ece5db] bg-white p-5 text-center">
         <Mascot mood="think" size={52} className="mx-auto" />
         <div className="mt-2 text-[12.5px] font-semibold text-[#2b2329]">your ad here?</div>
-        <p className="mt-1 text-[11.5px] leading-relaxed text-[#9a8f96]">
+        <p className="mt-1 text-[11.5px] leading-relaxed text-[#7d727a]">
           no. this space belongs to pip. we don&rsquo;t sell ads — the calculator is free and the
           journal is the marketing. that&rsquo;s the whole business model.
         </p>
@@ -271,8 +274,8 @@ export default function HomeJournalPage() {
   const posts = getAllPosts();
   const photos = getIgPhotos();
   const [featured, ...rest] = posts;
-  // Tiny alternating tilts make the grid feel hand-pinned, corkboard-style.
-  const tilts = [-0.5, 0.45, -0.35, 0.5, -0.45, 0.35];
+  // Alternating tilts make the grid feel hand-pinned, corkboard-style.
+  const tilts = [-1.2, 1.05, -0.9, 1.2, -1.05, 0.9];
 
   return (
     <main className="min-h-full bg-[#faf6f1] pb-20">
@@ -323,6 +326,25 @@ export default function HomeJournalPage() {
               money maths of finally moving in together. No &ldquo;10 tips to feel connected 💕&rdquo;
               listicles — just what actually works for us.
             </p>
+
+            {/* the distance itself — Adelaide to her, dashed arc in flight */}
+            <div className="mt-5 flex items-center gap-3" aria-hidden>
+              <svg viewBox="0 0 260 44" className="w-[260px]">
+                <path
+                  d="M10 36 Q130 -12 250 36"
+                  fill="none"
+                  stroke="#b25c72"
+                  strokeWidth="1.8"
+                  strokeDasharray="3 7"
+                  strokeLinecap="round"
+                  className="flightline"
+                />
+                <circle cx="10" cy="36" r="3.5" fill="#b25c72" />
+                <circle cx="250" cy="36" r="3.5" fill="#b25c72" />
+                <text x="10" y="30" fontSize="9" fill="#7d727a" fontWeight="600">adelaide</text>
+                <text x="250" y="30" fontSize="9" fill="#7d727a" fontWeight="600" textAnchor="end">her ♥</text>
+              </svg>
+            </div>
           </div>
         </div>
 
@@ -335,6 +357,11 @@ export default function HomeJournalPage() {
             ) : (
               <p className="text-[15px] text-[#6b6068]">No posts yet — check back soon.</p>
             )}
+
+            {/* mobile-only: the fake ad lives in the feed, where it's seen */}
+            <div className="mt-5 lg:hidden">
+              <CalculatorFakeAd />
+            </div>
 
             {/* ── The rest + the tool card ──────────────────── */}
             <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -354,11 +381,11 @@ export default function HomeJournalPage() {
         {/* ── Sign-off ──────────────────────────────────────── */}
         <div className="mt-14 flex flex-col items-center gap-2 text-center">
           <Mascot mood="wave" size={56} />
-          <p className="max-w-[420px] text-[13.5px] leading-relaxed text-[#9a8f96]">
+          <p className="max-w-[420px] text-[13.5px] leading-relaxed text-[#7d727a]">
             Written from Adelaide and wherever she is. Pip flies between us. New posts whenever
             something&rsquo;s actually worth saying.
           </p>
-          <div className="mt-2 flex gap-5 text-[12.5px] text-[#9a8f96]">
+          <div className="mt-2 flex gap-5 text-[12.5px] text-[#7d727a]">
             <Link href="/methodology" className="hover:text-[#b25c72]">Methodology</Link>
             <Link href="/privacy" className="hover:text-[#b25c72]">Privacy</Link>
             <Link href="/terms" className="hover:text-[#b25c72]">Terms</Link>
