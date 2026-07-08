@@ -58,6 +58,25 @@ const VERDICT_MOOD: Record<"comfortable" | "tight" | "not-yet", Mood> = {
 const HORIZONS = [1, 5, 10];
 // Headline destinations for the side-by-side comparison (shown in AUD).
 const COMPARE_COUNTRIES = ["AU", "NZ", "GB", "US", "CA", "JP", "SG", "DE"];
+
+// Great-circle distance between two areas, for "places nearby".
+function distKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const rad = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * rad;
+  const dLng = (b.lng - a.lng) * rad;
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(s));
+}
+
+// The three results tabs — everything below the verdict lives in one of these.
+const RESULT_TABS = [
+  { id: "plan", label: "Your plan", emoji: "🛣️" },
+  { id: "numbers", label: "The numbers", emoji: "💸" },
+  { id: "compare", label: "Compare places", emoji: "📍" },
+] as const;
+type ResultTab = (typeof RESULT_TABS)[number]["id"];
 // Intake steps before the results screen.
 const INTAKE_STEPS = 5;
 const RESULTS_STEP = INTAKE_STEPS + 1;
@@ -277,6 +296,27 @@ export default function Simulator() {
       .sort((a, b) => b.leftover - a.leftover);
   }, [baseInput, area]);
 
+  // Places nearby — the same plan in the closest suburbs and towns around your
+  // pick, in the destination's own currency.
+  const nearbyComparisons = useMemo(() => {
+    const rest = (AREAS_BY_COUNTRY[area.country] ?? []).filter((a) => a.id !== area.id);
+    const nearest = [...rest].sort((x, y) => distKm(area, x) - distKm(area, y)).slice(0, 7);
+    return [area, ...nearest]
+      .map((ar) => {
+        const res = simulate({ ...baseInput, area: ar, displayCurrency: area.currency });
+        return {
+          area: ar,
+          rent: res.rent,
+          leftover: res.leftover,
+          upfront: res.upfront,
+          months: res.monthsToMoveIn,
+          years: res.yearsToDeposit,
+          verdict: res.verdict,
+        };
+      })
+      .sort((a, b) => b.leftover - a.leftover);
+  }, [baseInput, area]);
+
   // Pip's ideas: three quick what-ifs that change one lever of the plan.
   const altScenarios = useMemo(() => {
     const c = area.currency;
@@ -447,6 +487,7 @@ export default function Simulator() {
         kids={kids}
         result={result}
         comparisons={comparisons}
+        nearby={nearbyComparisons}
         altScenarios={altScenarios}
         shareUrl={shareUrl}
         moveInDate={moveInDate}
@@ -989,6 +1030,7 @@ function Results({
   kids,
   result,
   comparisons,
+  nearby,
   altScenarios,
   shareUrl,
   moveInDate,
@@ -1016,6 +1058,7 @@ function Results({
   kids: number;
   result: ReturnType<typeof simulate>;
   comparisons: Comparison[];
+  nearby: Comparison[];
   altScenarios: { key: string; emoji: string; title: string; sub: string; apply: () => void }[];
   shareUrl: string;
   moveInDate: string;
@@ -1057,6 +1100,21 @@ function Results({
       ? `${names.yourName} & ${names.partnerName}`
       : names.yourName || "The two of you";
   const [copied, setCopied] = useState(false);
+  const [tab, setTab] = useState<ResultTab>("plan");
+
+  // Journey nodes deep-link into cards that live inside tabs — switch to the
+  // right tab first, then scroll once it's on screen.
+  const TARGET_TAB: Record<string, ResultTab> = {
+    "j-money": "numbers",
+    "j-movein": "numbers",
+    "j-future": "numbers",
+  };
+  function jumpTo(target: string) {
+    setTab(TARGET_TAB[target] ?? "plan");
+    setTimeout(() => {
+      document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -1086,7 +1144,7 @@ function Results({
 
   return (
     <main className="flex-1">
-      <div className="mx-auto max-w-5xl px-5 py-10">
+      <div className="mx-auto max-w-6xl px-5 py-10">
         <div className="mb-8 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-[#b25c72]" title="Back to the journal">
             <HeartGap />
@@ -1146,50 +1204,77 @@ function Results({
             />
           </div>
 
-          {/* The journey — your road to closing the distance */}
-          <Journey
-            result={result}
-            cur={cur}
-            moveInDate={moveInDate}
-            setMoveInDate={setMoveInDate}
-          />
+          {/* Tabs — everything below the headline lives in one of three panels */}
+          <div
+            role="tablist"
+            aria-label="Results sections"
+            className="flex rounded-full border border-zinc-200 bg-white p-1 shadow-sm"
+          >
+            {RESULT_TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={tab === t.id}
+                onClick={() => setTab(t.id)}
+                className={`flex-1 rounded-full px-2 py-2 text-sm font-semibold transition sm:px-4 ${
+                  tab === t.id ? "bg-[#b25c72] text-white shadow-sm" : "text-zinc-500 hover:text-zinc-800"
+                }`}
+              >
+                <span className="mr-1.5" aria-hidden>
+                  {t.emoji}
+                </span>
+                {t.label}
+              </button>
+            ))}
+          </div>
 
-          {/* Pip's ideas — quick what-ifs */}
-          {altScenarios.length > 0 && (
-            <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
-                Pip&apos;s ideas to close the gap
-              </h3>
-              <p className="mt-1 text-xs text-zinc-400">Tap one to try it on your plan.</p>
-              <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                {altScenarios.map((s) => (
-                  <button
-                    key={s.key}
-                    type="button"
-                    onClick={s.apply}
-                    className="rounded-2xl border border-zinc-200 p-4 text-left transition hover:border-[#b25c72] hover:bg-[#b25c72]/5"
-                  >
-                    <span className="text-2xl">{s.emoji}</span>
-                    <span className="mt-2 block text-sm font-semibold text-zinc-800">{s.title}</span>
-                    <span className="block text-xs font-medium text-[#8a3f54]">{s.sub}</span>
-                  </button>
-                ))}
+          {tab === "plan" && (
+            <div className="step-in grid gap-5 lg:grid-cols-2 lg:items-start">
+              {/* The journey — your road to closing the distance */}
+              <Journey
+                result={result}
+                cur={cur}
+                moveInDate={moveInDate}
+                setMoveInDate={setMoveInDate}
+                onJump={jumpTo}
+              />
+
+              <div className="flex flex-col gap-5">
+                {/* Pip's ideas — quick what-ifs */}
+                {altScenarios.length > 0 && (
+                  <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
+                      Pip&apos;s ideas to close the gap
+                    </h3>
+                    <p className="mt-1 text-xs text-zinc-400">Tap one to try it on your plan.</p>
+                    <div className="mt-3 grid gap-3">
+                      {altScenarios.map((s) => (
+                        <button
+                          key={s.key}
+                          type="button"
+                          onClick={s.apply}
+                          className="flex items-center gap-4 rounded-2xl border border-zinc-200 p-4 text-left transition hover:border-[#b25c72] hover:bg-[#b25c72]/5"
+                        >
+                          <span className="text-2xl">{s.emoji}</span>
+                          <span>
+                            <span className="block text-sm font-semibold text-zinc-800">{s.title}</span>
+                            <span className="block text-xs font-medium text-[#8a3f54]">{s.sub}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Best-value place nearby — a teaser that jumps to the compare tab */}
+                <NearbyTeaser nearby={nearby} currentId={area.id} cur={cur} onCompare={() => setTab("compare")} />
               </div>
             </div>
           )}
 
-          {/* Where else in the world — elevated from the bottom */}
-          <CompareCard comparisons={comparisons} currentId={area.id} onPickArea={onPickArea} />
-
-          <div className="flex items-center gap-3 pt-2">
-            <span className="h-px flex-1 bg-zinc-200" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
-              The full breakdown
-            </span>
-            <span className="h-px flex-1 bg-zinc-200" />
-          </div>
-
-          <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+          {tab === "numbers" && (
+          <div className="step-in grid gap-5 lg:grid-cols-2 lg:items-start">
             <div className="flex flex-col gap-5">
           {/* Money breakdown */}
           <div id="j-money" className="scroll-mt-4 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
@@ -1434,7 +1519,7 @@ function Results({
 
             <div className="mt-5">
               <div className="flex items-center justify-between text-xs text-white/70">
-                <span>{buying ? `Of ${a.city} owned outright` : `Toward a home deposit in ${a.region}`}</span>
+                <span>{buying ? `Of ${a.city} owned outright` : `If you ever want to buy in ${a.region}`}</span>
                 <span>
                   {Math.round(milestone.depositPct * 100)}% of{" "}
                   {fmt(buying ? result.deposit * 5 : result.depositTarget, cur)}
@@ -1454,10 +1539,10 @@ function Results({
                   ? "You can't cover the deposit here yet — a cheaper area, or renting first, gets you in the door sooner."
                   : `You'd be ready to buy in about ${result.yearsToDeposit.toFixed(1)} years — then you own from the day you move in.`
                 : result.yearsToDeposit === null
-                  ? "Right now your surplus here won't build a deposit — try a cheaper area or a leaner lifestyle."
+                  ? "Right now your surplus here won't build savings — try a cheaper area or a leaner lifestyle."
                   : result.yearsToDeposit <= 10
-                    ? `On track to own a place together in about ${result.yearsToDeposit.toFixed(1)} years.`
-                    : `A deposit here is roughly ${result.yearsToDeposit.toFixed(0)} years away — a cheaper area gets you there sooner.`}
+                    ? `And if buying's ever on the cards, you'd have a deposit in about ${result.yearsToDeposit.toFixed(1)} years.`
+                    : `Renting works well here — a deposit would take roughly ${result.yearsToDeposit.toFixed(0)} years if you ever wanted to buy.`}
               {kids > 0 && " (With kids already in the budget.)"}
             </p>
             <p className="mt-3 text-xs text-white/50">
@@ -1504,7 +1589,20 @@ function Results({
           </div>
             </div>
           </div>
+          )}
 
+          {tab === "compare" && (
+            <div className="step-in">
+              <CompareCard
+                nearby={nearby}
+                world={comparisons}
+                currentId={area.id}
+                cur={cur}
+                buying={buying}
+                onPickArea={onPickArea}
+              />
+            </div>
+          )}
         </div>
 
         <footer className="mt-10 text-xs text-zinc-400">
@@ -1527,28 +1625,97 @@ function Results({
 const fmtYears = (years: number | null) => (years === null ? "—" : `~${years.toFixed(1)} yrs`);
 const cityFlag = (a: Area) => getCountry(a.country)?.flag ?? "";
 
-// "Same life, other countries" — your plan across the world, in AUD. A
-// head-to-head between your pick and its best-value rival, then the full
-// leaderboard ranked by what's left over each month.
-function CompareCard({
-  comparisons,
+// A one-line nudge on the plan tab: the best-value place near your pick,
+// linking through to the full comparison tab.
+function NearbyTeaser({
+  nearby,
   currentId,
+  cur,
+  onCompare,
+}: {
+  nearby: Comparison[];
+  currentId: string;
+  cur: string;
+  onCompare: () => void;
+}) {
+  const current = nearby.find((c) => c.area.id === currentId);
+  const best = nearby.find((c) => c.area.id !== currentId);
+  if (!current || !best) return null;
+  const gain = best.leftover - current.leftover;
+  return (
+    <button
+      type="button"
+      onClick={onCompare}
+      className="flex items-center gap-4 rounded-3xl border border-zinc-200 bg-white p-5 text-left shadow-sm transition hover:border-[#b25c72] hover:bg-[#b25c72]/5"
+    >
+      <span className="text-2xl" aria-hidden>
+        📍
+      </span>
+      <span className="flex-1">
+        <span className="block text-sm font-semibold text-zinc-800">
+          {gain > 0
+            ? `${best.area.city}, just nearby, would leave you ${fmt(gain, cur)} more a month`
+            : `${current.area.city} is the best-value spot in the area`}
+        </span>
+        <span className="block text-xs text-zinc-400">See how places nearby stack up →</span>
+      </span>
+    </button>
+  );
+}
+
+// "Compare places" — your exact plan in the suburbs around your pick, or one
+// city per country across the world (normalised to AUD). A head-to-head
+// between your pick and its best-value rival, then the full leaderboard
+// ranked by what's left over each month.
+function CompareCard({
+  nearby,
+  world,
+  currentId,
+  cur,
+  buying,
   onPickArea,
 }: {
-  comparisons: Comparison[];
+  nearby: Comparison[];
+  world: Comparison[];
   currentId: string;
+  cur: string;
+  buying: boolean;
   onPickArea: (a: Area) => void;
 }) {
-  // comparisons is already sorted by leftover, highest first.
-  const current = comparisons.find((c) => c.area.id === currentId) ?? comparisons[0];
+  const hasNearby = nearby.length > 1;
+  const [scope, setScope] = useState<"nearby" | "world">(hasNearby ? "nearby" : "world");
+  const list = scope === "nearby" ? nearby : world;
+  const listCur = scope === "nearby" ? cur : "AUD"; // world rows are normalised to AUD
+  // Each list is already sorted by leftover, highest first.
+  const current = list.find((c) => c.area.id === currentId) ?? list[0];
   // Best rival = the highest-leftover option that isn't your pick.
-  const rival = comparisons.find((c) => c.area.id !== current.area.id);
+  const rival = list.find((c) => c.area.id !== current.area.id);
 
   return (
     <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">Head to head</h3>
+        {hasNearby && (
+          <div className="flex rounded-full border border-zinc-200 bg-white p-0.5 text-xs font-semibold shadow-sm">
+            {(["nearby", "world"] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setScope(s)}
+                className={`rounded-full px-3 py-1 transition ${
+                  scope === s ? "bg-[#b25c72] text-white" : "text-zinc-500 hover:text-zinc-700"
+                }`}
+              >
+                {s === "nearby" ? "📍 Nearby" : "🌏 Around the world"}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Head to head — your pick vs. its best-value rival */}
       {rival && (
-        <HeadToHead current={current} rival={rival} onPickArea={onPickArea} />
+        <HeadToHead current={current} rival={rival} cur={listCur} buying={buying} onPickArea={onPickArea} />
       )}
 
       {/* The full leaderboard */}
@@ -1557,23 +1724,27 @@ function CompareCard({
           <h3 className="font-display text-xl font-semibold tracking-tight text-zinc-900">
             Where your money goes furthest
           </h3>
-          <span className="hidden text-xs text-zinc-400 sm:block">Left over /mo, in AUD · highest first</span>
+          <span className="hidden text-xs text-zinc-400 sm:block">
+            Left over /mo, in {listCur} · highest first
+          </span>
         </div>
         <p className="mt-1 text-xs text-zinc-400">
-          Your exact plan in other countries — tap one to move your whole scenario there.
+          {scope === "nearby"
+            ? `Your exact plan in the places around ${current.area.region} — tap one to move your whole scenario there.`
+            : "Your exact plan in other countries — tap one to move your whole scenario there."}
         </p>
 
         <div className="mt-4 flex items-center px-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
           <span className="w-7">#</span>
-          <span className="flex-1">City</span>
+          <span className="flex-1">{scope === "nearby" ? "Suburb" : "City"}</span>
           <span className="hidden w-24 text-right sm:block">Rent /mo</span>
           <span className="w-24 text-right">Left over</span>
-          <span className="hidden w-24 text-right md:block">To a deposit</span>
+          <span className="hidden w-24 text-right md:block">{buying ? "To a deposit" : "Upfront"}</span>
           <span className="w-24 text-right">Verdict</span>
         </div>
 
         <ul className="mt-1 divide-y divide-zinc-100">
-          {comparisons.map((c, i) => {
+          {list.map((c, i) => {
             const isCurrent = c.area.id === currentId;
             const v = VERDICT_COPY[c.verdict];
             return (
@@ -1602,17 +1773,17 @@ function CompareCard({
                     )}
                   </span>
                   <span className="hidden w-24 text-right tabular-nums text-zinc-500 sm:block">
-                    {fmt(c.rent, "AUD")}
+                    {fmt(c.rent, listCur)}
                   </span>
                   <span
                     className={`w-24 text-right font-semibold tabular-nums ${
                       c.leftover >= 0 ? "text-emerald-600" : "text-rose-600"
                     }`}
                   >
-                    {fmt(c.leftover, "AUD")}
+                    {fmt(c.leftover, listCur)}
                   </span>
                   <span className="hidden w-24 text-right tabular-nums text-zinc-500 md:block">
-                    {fmtYears(c.years)}
+                    {buying ? fmtYears(c.years) : fmt(c.upfront, listCur)}
                   </span>
                   <span className="flex w-24 items-center justify-end gap-1.5">
                     <span className={`h-2 w-2 shrink-0 rounded-full ${v.dot}`} />
@@ -1624,8 +1795,9 @@ function CompareCard({
           })}
         </ul>
         <p className="mt-3 px-1 text-[11px] text-zinc-400">
-          Indicative medians for a two-bedroom place and typical living costs, normalised to AUD.
-          Not live data — a starting point, not financial advice.
+          Indicative medians for a two-bedroom place and typical living costs,{" "}
+          {scope === "nearby" ? `shown in ${listCur}` : "normalised to AUD"}. Not live data — a
+          starting point, not financial advice.
         </p>
       </div>
     </div>
@@ -1635,10 +1807,14 @@ function CompareCard({
 function HeadToHead({
   current,
   rival,
+  cur,
+  buying,
   onPickArea,
 }: {
   current: Comparison;
   rival: Comparison;
+  cur: string;
+  buying: boolean;
   onPickArea: (a: Area) => void;
 }) {
   // Whichever leaves more each month wears the "Better value" badge.
@@ -1651,10 +1827,9 @@ function HeadToHead({
 
   return (
     <div>
-      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">Head to head</h3>
-      <div className="relative mt-3 grid gap-4 sm:grid-cols-2">
-        <CompareColumn c={current} winner={winner.area.id === current.area.id} onPickArea={onPickArea} />
-        <CompareColumn c={rival} winner={winner.area.id === rival.area.id} onPickArea={onPickArea} />
+      <div className="relative grid gap-4 sm:grid-cols-2">
+        <CompareColumn c={current} winner={winner.area.id === current.area.id} cur={cur} buying={buying} onPickArea={onPickArea} />
+        <CompareColumn c={rival} winner={winner.area.id === rival.area.id} cur={cur} buying={buying} onPickArea={onPickArea} />
         <span className="pointer-events-none absolute left-1/2 top-1/2 hidden h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white font-display text-sm font-semibold text-zinc-400 shadow-sm sm:flex">
           vs
         </span>
@@ -1665,9 +1840,9 @@ function HeadToHead({
           <Mascot mood="happy" size={40} className="shrink-0" />
           <p className="text-sm text-[#7a5560]">
             <strong className="text-zinc-700">
-              {winner.area.city} leaves you ~{fmt(monthlyGap, "AUD")} more every month
+              {winner.area.city} leaves you ~{fmt(monthlyGap, cur)} more every month
             </strong>
-            {yearsSooner !== null && yearsSooner >= 0.3
+            {buying && yearsSooner !== null && yearsSooner >= 0.3
               ? ` — and gets you to a deposit about ${yearsSooner.toFixed(1)} years sooner.`
               : "."}{" "}
             Same two incomes, very different runway.
@@ -1681,19 +1856,29 @@ function HeadToHead({
 function CompareColumn({
   c,
   winner,
+  cur,
+  buying,
   onPickArea,
 }: {
   c: Comparison;
   winner: boolean;
+  cur: string;
+  buying: boolean;
   onPickArea: (a: Area) => void;
 }) {
   const v = VERDICT_COPY[c.verdict];
-  const rows: [string, string, boolean][] = [
-    ["Rent /mo (2-bed)", fmt(c.rent, "AUD"), false],
-    ["Left over /mo", fmt(c.leftover, "AUD"), c.leftover >= 0],
-    ["Upfront to move in", fmt(c.upfront, "AUD"), false],
-    ["Years to a deposit", fmtYears(c.years), false],
-  ];
+  // Renters see rent front and centre; deposit talk only shows up when buying.
+  const rows: [string, string, boolean][] = buying
+    ? [
+        ["Left over /mo", fmt(c.leftover, cur), c.leftover >= 0],
+        ["Upfront to move in", fmt(c.upfront, cur), false],
+        ["Ready to buy in", fmtYears(c.years), false],
+      ]
+    : [
+        ["Rent /mo (2-bed)", fmt(c.rent, cur), false],
+        ["Left over /mo", fmt(c.leftover, cur), c.leftover >= 0],
+        ["Upfront to move in", fmt(c.upfront, cur), false],
+      ];
   return (
     <div
       className={`relative rounded-3xl bg-white p-6 ${
@@ -1943,11 +2128,13 @@ function Journey({
   cur,
   moveInDate,
   setMoveInDate,
+  onJump,
 }: {
   result: ReturnType<typeof simulate>;
   cur: string;
   moveInDate: string;
   setMoveInDate: (s: string) => void;
+  onJump: (target: string) => void;
 }) {
   const verdict = VERDICT_COPY[result.verdict];
 
@@ -2070,10 +2257,7 @@ function Journey({
           <button
             key={node.label}
             type="button"
-            onClick={() =>
-              node.target &&
-              document.getElementById(node.target)?.scrollIntoView({ behavior: "smooth", block: "start" })
-            }
+            onClick={() => node.target && onJump(node.target)}
             aria-label={`${node.label}: ${node.value}`}
             className={`absolute flex w-28 -translate-x-1/2 -translate-y-1/2 flex-col items-center text-center ${
               node.target ? "cursor-pointer" : "cursor-default"
