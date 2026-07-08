@@ -2,7 +2,24 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Mascot from "../../Mascot";
+import ReadProgress from "../ReadProgress";
 import { getAllPosts, getPost, getPostSlugs, formatDate, type PostMeta } from "@/lib/blog";
+
+// Pip signs every post off differently — picked by slug hash so it's stable
+// per-post but varies across the journal.
+const PIP_QUIPS = [
+  "pip proofread this. pip found no errors. pip is a bird.",
+  "no AI slop was harmed in the making of this post. pip supervised.",
+  "this post was written in two timezones and one shared doc.",
+  "pip flew 8,000km to fact-check this. metaphorically.",
+  "if this helped, tell another long-distance couple. pip's marketing budget is seeds.",
+];
+
+function pipQuip(slug: string): string {
+  let h = 0;
+  for (const c of slug) h = (h * 31 + c.charCodeAt(0)) % 997;
+  return PIP_QUIPS[h % PIP_QUIPS.length];
+}
 
 // A single journal post. Server component: reads and renders the Markdown at
 // build time, one static page per slug. `params` is a Promise in this version
@@ -123,6 +140,7 @@ export default async function BlogPostPage({
 
   return (
     <main className="min-h-full bg-[#faf6f1] pb-20">
+      <ReadProgress />
       {/* ── Top bar ─────────────────────────────────────────── */}
       <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#efe8df] bg-white/90 px-5 py-3.5 backdrop-blur sm:px-14">
         <Link href="/" className="flex items-center gap-2" aria-label="Close the Distance home">
@@ -190,6 +208,11 @@ export default async function BlogPostPage({
             Start the calculator →
           </Link>
         </div>
+
+        {/* ── Pip's sign-off ────────────────────────────────── */}
+        <p className="mt-6 text-center text-[12px] italic text-[#a89aa2]">
+          {pipQuip(post.slug)}
+        </p>
 
         {/* ── Keep reading ──────────────────────────────────── */}
         {related.length > 0 && (

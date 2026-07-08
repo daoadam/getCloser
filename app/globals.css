@@ -326,6 +326,67 @@ input[type="range"]::-moz-range-thumb {
   background: #fdfbf8;
 }
 
+/* Pip rating — n of 5 birds, greyed birds are "unearned". */
+.prose-blog .pip-rating {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  border: 1px solid #ece5db;
+  border-radius: 14px;
+  background: #fdf9f4;
+  padding: 12px 16px;
+}
+.prose-blog .pip-rating-birds {
+  display: inline-flex;
+  gap: 2px;
+}
+.prose-blog .pip-rating-bird svg {
+  width: 24px;
+  height: 24px;
+}
+.prose-blog .pip-rating-bird:not(.is-filled) {
+  filter: grayscale(1);
+  opacity: 0.3;
+}
+.prose-blog .pip-rating-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a434b;
+}
+
+/* The love ticker — a slow marquee of nonsense we stand behind. */
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.ticker {
+  overflow: hidden;
+  white-space: nowrap;
+}
+.ticker-track {
+  display: inline-flex;
+  animation: ticker 36s linear infinite;
+}
+.ticker:hover .ticker-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { animation: none; }
+}
+
+/* Reading progress — a rose thread across the top of a post. */
+.read-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, #b25c72, #e89aa6);
+  z-index: 50;
+}
+
 /* Markdown images as figures — rounded, bordered, captioned. */
 .prose-blog .prose-figure {
   margin: 1.6em 0;

@@ -309,6 +309,29 @@ export default function HomeJournalPage() {
         </div>
       </div>
 
+      {/* ── The love ticker ─────────────────────────────────── */}
+      <div className="ticker border-b border-[#efe8df] bg-[#2b2329] py-2 text-[11.5px] font-semibold tracking-wide text-[#f3c9d4]">
+        <div className="ticker-track">
+          {[0, 1].map((n) => (
+            <span key={n} aria-hidden={n === 1}>
+              {[
+                "written 8,000km apart",
+                "pip approves this journal",
+                "no ads except our own",
+                "co-op date night is real date night",
+                "the call stays open",
+                "closing the distance, eventually",
+                "your timezone maths is valid",
+              ].map((t) => (
+                <span key={t} className="mx-5 inline-flex items-center gap-5">
+                  {t} <span className="text-[#b25c72]">♥</span>
+                </span>
+              ))}
+            </span>
+          ))}
+        </div>
+      </div>
+
       <div className="mx-auto max-w-[1180px] px-5 py-10 sm:px-8 sm:py-14">
         {/* ── Hero ──────────────────────────────────────────── */}
         <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-end sm:gap-7">

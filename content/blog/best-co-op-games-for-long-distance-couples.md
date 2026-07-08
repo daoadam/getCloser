@@ -16,7 +16,11 @@ after way too many hours of testing (for science, obviously), here's the tier li
 
 > pip's take: a game about a couple learning to cooperate, played by a couple learning to cooperate. the devs knew what they were doing.
 
+> 🐦 5/5 | the LDR co-op gold standard. one purchase, ten hours, zero regrets.
+
 **Split Fiction.** same studio (Hazelight), same one-copy Friend's Pass deal, and honestly? even better. you play two writers trapped in each other's stories, so one level you're both in a fantasy world, next you're in sci-fi. if you finished It Takes Two and had the "what now" sadness, this is what now.
+
+> 🐦 5/5 | it takes two but more. the "what now" cure.
 
 ## the A tier — the long haul games
 
@@ -29,6 +33,8 @@ after way too many hours of testing (for science, obviously), here's the tier li
 **Overcooked 2.** listen. this game has ended stronger couples than us. but if you can survive kitchen 4-2 without someone leaving the call, you can survive a visa application. genuinely recommend it *because* it's stressful — you learn how you two argue, and long distance means you need to be good at arguing over voice with no body language. Overcooked is training.
 
 > ⚠️ **do not** play overcooked the same week as a visa deadline, a flight booking, or any conversation containing the phrase "we need to talk about money." trust us on this one.
+
+> 🐦 3/5 | two birds deducted for emotional damage. still recommend.
 
 ## the quick verdict table
 

@@ -44,6 +44,7 @@ marked.setOptions({ gfm: true, breaks: false });
 //   > ⚠️ real talk             → amber warning callout
 //   > ❝ quotable line          → big Fraunces pull-quote
 //   > 📊 $360 | = one flight   → big-stat block (value | label)
+//   > 🐦 4/5 | verdict text    → Pip rating: a row of birds, filled to n of 5
 //
 // Images render as <figure> with the title text as a caption:
 //   ![alt](/blog/pic.jpg "what we were playing")
@@ -70,6 +71,20 @@ marked.use({
         // "📊 value | label" — big number with a small explanation under it.
         const [value, ...label] = raw.replace("📊", "").split("|");
         return `<div class="statblock"><div class="statblock-value">${value.trim()}</div><div class="statblock-label">${label.join("|").trim()}</div></div>\n`;
+      }
+      if (raw.startsWith("🐦")) {
+        // "🐦 4/5 | verdict" — n filled Pips out of 5, with a verdict line.
+        const rest = raw.replace("🐦", "").trim();
+        const match = rest.match(/^(\d(?:\.\d)?)\s*\/\s*5\s*(?:\|\s*([^]*))?$/);
+        const score = match ? Math.max(0, Math.min(5, parseFloat(match[1]))) : 0;
+        const label = match?.[2]?.trim() ?? rest;
+        const birds = Array.from({ length: 5 })
+          .map(
+            (_, i) =>
+              `<span class="pip-rating-bird${i < Math.round(score) ? " is-filled" : ""}">${PIP_MINI}</span>`
+          )
+          .join("");
+        return `<div class="pip-rating"><span class="pip-rating-birds" role="img" aria-label="${score} out of 5">${birds}</span><span class="pip-rating-label">${label}</span></div>\n`;
       }
       if (raw.startsWith("💸")) {
         return `<aside class="pip-note pip-note--money">${stripOnce(html, "💸")}</aside>\n`;
