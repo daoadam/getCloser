@@ -4,6 +4,7 @@
 // the one question Close the Distance answers, then hands the couple to the intake.
 // Every call-to-action funnels into onStart (→ step 1 of the simulator).
 
+import Link from "next/link";
 import Mascot from "./Mascot";
 import type { LegalTab } from "./Legal";
 
@@ -71,7 +72,7 @@ export default function Landing({
               Guides
             </button>
           )}
-          <a href="/" className="hidden hover:text-[#b25c72] sm:inline">Journal</a>
+          <Link href="/" className="hidden hover:text-[#b25c72] sm:inline">Journal</Link>
           <button
             onClick={onStart}
             className="rounded-xl bg-[#b25c72] px-5 py-2.5 font-semibold text-white transition hover:bg-[#9c4a60]"
