@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Mascot from "../Mascot";
 import EmailCapture from "../EmailCapture";
+import ThemeToggle from "../ThemeToggle";
 import { getIgPhotos } from "@/lib/ig";
 
 // About — the two humans (and one bird) behind the site. The trust page:
@@ -53,12 +54,15 @@ export default function AboutPage() {
             Close the Distance
           </span>
         </Link>
-        <Link
-          href="/"
-          className="rounded-xl border border-[#ddd5cb] bg-white px-4 py-2 text-[13.5px] font-semibold text-[#3f3a40] transition hover:bg-[#faf6f1]"
-        >
-          ← the journal
-        </Link>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <Link
+            href="/"
+            className="rounded-xl border border-[#ddd5cb] bg-white px-4 py-2 text-[13.5px] font-semibold text-[#3f3a40] transition hover:bg-[#faf6f1]"
+          >
+            ← the journal
+          </Link>
+        </div>
       </div>
 
       <div className="mx-auto max-w-[760px] px-5 py-12 sm:px-8">

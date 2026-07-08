@@ -3,6 +3,7 @@ import Link from "next/link";
 import Mascot from "./Mascot";
 import FeedClient from "./FeedClient";
 import EmailCapture from "./EmailCapture";
+import ThemeToggle from "./ThemeToggle";
 import { getAllPosts } from "@/lib/blog";
 import { getIgPhotos, type IgPhoto } from "@/lib/ig";
 
@@ -187,13 +188,14 @@ export default function HomeJournalPage() {
             Close the Distance
           </span>
         </Link>
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-3 sm:gap-5">
           <Link
             href="/about"
             className="hidden text-[13.5px] font-medium text-[#6b6068] transition hover:text-[#b25c72] sm:inline"
           >
             About us
           </Link>
+          <ThemeToggle />
           <Link
             href="/calculator"
             className="rounded-xl bg-[#b25c72] px-4 py-2 text-[13.5px] font-semibold text-white transition hover:brightness-105"

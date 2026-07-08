@@ -470,3 +470,105 @@ input[type="range"]::-moz-range-thumb {
 .gc-cluster:hover {
   transform: scale(1.08);
 }
+
+/* ── Dark mode ────────────────────────────────────────────────
+   Explicit opt-in via [data-theme="dark"] on <html> (see ThemeToggle).
+   The site's palette lives in ~30 arbitrary-value utility classes, so dark
+   mode is a set of unlayered overrides (they beat @layer utilities).
+   Design conceit: photos, cover art and tag chips stay lit — a corkboard
+   under a lamp. */
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #181215;
+  --foreground: #f1e7ec;
+}
+
+/* page + section grounds */
+[data-theme="dark"] .bg-\[\#faf6f1\] { background-color: #181215; }
+[data-theme="dark"] .hover\:bg-\[\#faf6f1\]:hover { background-color: #2a2026; }
+[data-theme="dark"] .bg-white { background-color: #231a1f; }
+[data-theme="dark"] .bg-white\/90 { background-color: rgba(24, 18, 21, 0.9); }
+[data-theme="dark"] .bg-white\/60 { background-color: rgba(35, 26, 31, 0.6); }
+[data-theme="dark"] .bg-\[\#fdfbf8\] { background-color: #241b20; }
+[data-theme="dark"] .bg-\[\#fdf9f4\] { background-color: #241b20; }
+[data-theme="dark"] .bg-\[\#f1ebe2\] { background-color: #2e2329; }
+[data-theme="dark"] .bg-\[\#f6f0e8\] { background-color: #2e2329; }
+[data-theme="dark"] .bg-\[\#f4efe8\] { background-color: #2a2026; }
+[data-theme="dark"] .bg-\[\#fdf0f3\] { background-color: #33222a; }
+[data-theme="dark"] .bg-\[\#e9f5ee\] { background-color: #1d2f26; }
+[data-theme="dark"] .bg-\[\#e3dbd0\] { background-color: #3a2d34; }
+
+/* borders */
+[data-theme="dark"] .border-\[\#ece5db\],
+[data-theme="dark"] .border-\[\#efe8df\],
+[data-theme="dark"] .border-\[\#ddd5cb\],
+[data-theme="dark"] .border-\[\#f2ece4\],
+[data-theme="dark"] .border-\[\#f4eee6\],
+[data-theme="dark"] .border-\[\#e3dbd0\],
+[data-theme="dark"] .border-\[\#ddd0c1\] { border-color: #3a2d34; }
+[data-theme="dark"] .border-\[\#c6e6d4\] { border-color: #2c473a; }
+
+/* ink + body text */
+[data-theme="dark"] .text-\[\#2b2329\] { color: #f1e7ec; }
+[data-theme="dark"] .text-\[\#3f3a40\] { color: #e4d8de; }
+[data-theme="dark"] .text-\[\#6b6068\] { color: #c2b4bb; }
+[data-theme="dark"] .text-\[\#4a434b\] { color: #c9bcc3; }
+[data-theme="dark"] .text-\[\#5a525a\] { color: #b6a8af; }
+[data-theme="dark"] .text-\[\#7d727a\],
+[data-theme="dark"] .text-\[\#8a7f86\],
+[data-theme="dark"] .text-\[\#9a8f96\],
+[data-theme="dark"] .text-\[\#a59ca2\],
+[data-theme="dark"] .text-\[\#a89aa2\],
+[data-theme="dark"] .text-\[\#b3a89f\],
+[data-theme="dark"] .text-\[\#a89a8f\] { color: #98878f; }
+[data-theme="dark"] .text-zinc-600 { color: #c2b4bb; }
+[data-theme="dark"] .hover\:bg-zinc-100:hover { background-color: #2a2026; }
+[data-theme="dark"] .text-zinc-500 { color: #98878f; }
+
+/* the rose, brightened for dark contrast (bg-[#b25c72] buttons stay as-is) */
+[data-theme="dark"] .text-\[\#b25c72\] { color: #e094a8; }
+[data-theme="dark"] .hover\:text-\[\#b25c72\]:hover { color: #e094a8; }
+[data-theme="dark"] .text-\[\#8a3f54\] { color: #e094a8; }
+[data-theme="dark"] .text-\[\#1f6b46\] { color: #7fc9a2; }
+[data-theme="dark"] .text-\[\#1f8a5b\] { color: #7fc9a2; }
+
+/* prose (post bodies) */
+[data-theme="dark"] .prose-blog { color: #c9bcc3; }
+[data-theme="dark"] .prose-blog h2,
+[data-theme="dark"] .prose-blog h3,
+[data-theme="dark"] .prose-blog strong { color: #f1e7ec; }
+[data-theme="dark"] .prose-blog a { color: #e094a8; }
+[data-theme="dark"] .prose-blog code { background: #2e2329; }
+[data-theme="dark"] .prose-blog blockquote { color: #b6a8af; }
+[data-theme="dark"] .prose-blog hr { border-top-color: #3a2d34; }
+[data-theme="dark"] .prose-blog .pip-note { background: #241b20; border-color: #3a2d34; }
+[data-theme="dark"] .prose-blog .pip-note--money { background: #1d2f26; border-color: #2c473a; }
+[data-theme="dark"] .prose-blog .pip-note--money strong { color: #7fc9a2; }
+[data-theme="dark"] .prose-blog .pip-note--warn { background: #33291a; border-color: #4d3e24; }
+[data-theme="dark"] .prose-blog .pip-note--warn strong { color: #d9b06a; }
+[data-theme="dark"] .prose-blog .pullquote p { color: #e094a8; }
+[data-theme="dark"] .prose-blog .pullquote::before,
+[data-theme="dark"] .prose-blog .pullquote::after { background: #4d3a42; }
+[data-theme="dark"] .prose-blog .statblock { border-color: #3a2d34; }
+[data-theme="dark"] .prose-blog .statblock-value { color: #f1e7ec; }
+[data-theme="dark"] .prose-blog .statblock-label { color: #98878f; }
+[data-theme="dark"] .prose-blog table { border-color: #3a2d34; }
+[data-theme="dark"] .prose-blog thead { background: #2e2329; }
+[data-theme="dark"] .prose-blog th { color: #f1e7ec; }
+[data-theme="dark"] .prose-blog td { border-top-color: #3a2d34; }
+[data-theme="dark"] .prose-blog tbody tr:nth-child(even) { background: #241b20; }
+[data-theme="dark"] .prose-blog .photo-slot { border-color: #4d3a42; background: #241b20; }
+[data-theme="dark"] .prose-blog .pip-rating { background: #241b20; border-color: #3a2d34; }
+[data-theme="dark"] .prose-blog .pip-rating-label { color: #c9bcc3; }
+
+/* toc + misc components */
+[data-theme="dark"] .toc-link { color: #98878f; border-left-color: #3a2d34; }
+[data-theme="dark"] .toc-link:hover { color: #e094a8; border-left-color: #e094a8; }
+[data-theme="dark"] .gc-pin { background: #231a1f; color: #e4d8de; border-color: #3a2d34; }
+[data-theme="dark"] input[type="range"] { background: #3a2d34; }
+
+/* theme toggle icons — show the one you can switch TO */
+.theme-icon-sun { display: none; }
+[data-theme="dark"] .theme-icon-moon { display: none; }
+[data-theme="dark"] .theme-icon-sun { display: inline; }

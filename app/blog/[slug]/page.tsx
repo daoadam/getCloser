@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Mascot from "../../Mascot";
 import EmailCapture from "../../EmailCapture";
+import ThemeToggle from "../../ThemeToggle";
 import ReadProgress from "../ReadProgress";
 import { getAllPosts, getPost, getPostSlugs, formatDate, type PostMeta } from "@/lib/blog";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
@@ -162,12 +163,15 @@ export default async function BlogPostPage({
           <HeartGap stroke="#b25c72" />
           <span className="font-display text-lg font-semibold text-[#b25c72]">Close the Distance</span>
         </Link>
-        <Link
-          href="/"
-          className="rounded-xl border border-[#ddd5cb] bg-white px-4 py-2 text-[13.5px] font-semibold text-[#3f3a40] transition hover:bg-[#faf6f1]"
-        >
-          ← All posts
-        </Link>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <Link
+            href="/"
+            className="rounded-xl border border-[#ddd5cb] bg-white px-4 py-2 text-[13.5px] font-semibold text-[#3f3a40] transition hover:bg-[#faf6f1]"
+          >
+            ← All posts
+          </Link>
+        </div>
       </div>
 
       <div className="mx-auto grid max-w-[1020px] gap-10 px-5 py-10 sm:px-8 sm:py-14 lg:grid-cols-[200px_minmax(0,680px)] lg:justify-center">
