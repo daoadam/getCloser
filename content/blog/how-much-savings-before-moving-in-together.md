@@ -3,6 +3,7 @@ title: "How much savings do you need before moving in together?"
 date: "2026-06-24"
 excerpt: "There's no magic number — but there is a way to find yours. A simple framework for the three buckets of savings that actually matter when you close the distance."
 author: "Adam"
+tags: ["money", "real talk"]
 ---
 
 Short answer: there's no single number, and anyone who gives you one is selling something.

@@ -27,6 +27,7 @@ export type PostMeta = {
   date: string; // ISO yyyy-mm-dd
   excerpt: string;
   author: string;
+  tags: string[]; // e.g. ["money"], ["games", "fun"] — rendered as chips
   readingMinutes: number;
 };
 
@@ -53,6 +54,7 @@ function toMeta(slug: string, parsed: matter.GrayMatterFile<string>): PostMeta {
     date: String(data.date ?? ""),
     excerpt: String(data.excerpt ?? ""),
     author: String(data.author ?? "Close the Distance"),
+    tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
     readingMinutes: estimateReadingMinutes(parsed.content),
   };
 }

@@ -3,6 +3,7 @@ title: "What it actually costs to close the distance"
 date: "2026-07-01"
 excerpt: "We stopped guessing and added it all up — the flights, the deposit, the visa, the awful in-between months. Here's the honest number, and how to find yours."
 author: "Adam"
+tags: ["money", "real talk"]
 ---
 
 For two years, "when we finally live together" was a sentence we said instead of a plan. It felt romantic. It was also a way of not looking at the number.

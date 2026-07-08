@@ -35,6 +35,15 @@ export async function generateMetadata({
   };
 }
 
+// Topic chip colours — kept in lockstep with the homepage grid.
+const TAG_STYLE: Record<string, { bg: string; fg: string }> = {
+  money: { bg: "#e9f5ee", fg: "#1f6b46" },
+  "real talk": { bg: "#efe9f3", fg: "#6d4a7c" },
+  games: { bg: "#eef1fb", fg: "#4a5aa8" },
+  streaming: { bg: "#fbeee6", fg: "#b0642e" },
+  fun: { bg: "#fdf0f3", fg: "#b25c72" },
+};
+
 function HeartGap({ stroke = "currentColor" }: { stroke?: string }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -81,12 +90,24 @@ export default async function BlogPostPage({
 
       <article className="mx-auto max-w-[680px] px-5 py-10 sm:px-8 sm:py-14">
         {/* ── Post header ───────────────────────────────────── */}
-        <div className="flex items-center gap-2.5 text-[12.5px] font-medium text-[#9a8f96]">
+        <div className="flex flex-wrap items-center gap-2.5 text-[12.5px] font-medium text-[#9a8f96]">
           <span>{formatDate(post.date)}</span>
           <span aria-hidden>·</span>
           <span>{post.readingMinutes} min read</span>
           <span aria-hidden>·</span>
           <span>By {post.author}</span>
+          {post.tags.map((t) => {
+            const s = TAG_STYLE[t] ?? { bg: "#f1ebe2", fg: "#6b6068" };
+            return (
+              <span
+                key={t}
+                className="rounded-full px-2.5 py-1 text-[11px] font-bold lowercase tracking-wide"
+                style={{ background: s.bg, color: s.fg }}
+              >
+                {t}
+              </span>
+            );
+          })}
         </div>
         <h1 className="mt-3 font-display text-[32px] font-semibold leading-[1.08] tracking-[-0.02em] sm:text-[42px]">
           {post.title}
