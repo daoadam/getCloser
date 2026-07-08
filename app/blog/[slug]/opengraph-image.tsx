@@ -82,7 +82,7 @@ export default async function Image({
         >
           <div style={{ display: "flex", gap: 14 }}>
             {post?.date && <div>{formatDate(post.date)}</div>}
-            {post && <div>· {post.readingMinutes} min read</div>}
+            {post && <div>{`· ${post.readingMinutes} min read`}</div>}
           </div>
           <svg width="240" height="64" viewBox="0 0 240 64">
             <path
