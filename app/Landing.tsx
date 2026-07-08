@@ -71,6 +71,7 @@ export default function Landing({
               Guides
             </button>
           )}
+          <a href="/blog" className="hidden hover:text-[#b25c72] sm:inline">Journal</a>
           <button
             onClick={onStart}
             className="rounded-xl bg-[#b25c72] px-5 py-2.5 font-semibold text-white transition hover:bg-[#9c4a60]"
@@ -323,11 +324,12 @@ export default function Landing({
           <div className="flex gap-14 text-[13.5px]">
             <FooterCol
               heading="Product"
-              links={["How it works", "Guides", "FAQ"]}
+              links={["How it works", "Guides", "Journal", "FAQ"]}
               actions={{
                 ...(onGuides ? { Guides: onGuides } : {}),
                 ...(onFaq ? { FAQ: onFaq } : {}),
               }}
+              hrefs={{ Journal: "/blog" }}
             />
             <FooterCol
               heading="Trust"
@@ -447,16 +449,26 @@ function FooterCol({
   heading,
   links,
   actions,
+  hrefs,
 }: {
   heading: string;
   links: string[];
   actions?: Record<string, () => void>;
+  hrefs?: Record<string, string>;
 }) {
   return (
     <div className="flex flex-col items-start gap-2.5">
       <span className="font-semibold text-white">{heading}</span>
       {links.map((l) =>
-        actions?.[l] ? (
+        hrefs?.[l] ? (
+          <a
+            key={l}
+            href={hrefs[l]}
+            className="text-left text-[#cfc6cc]/90 transition hover:text-white hover:underline"
+          >
+            {l}
+          </a>
+        ) : actions?.[l] ? (
           <button
             key={l}
             onClick={actions[l]}

@@ -134,6 +134,85 @@ input[type="range"]::-moz-range-thumb {
   transform: scale(1.05);
 }
 
+/* ── Blog / Journal article body ─────────────────────────────
+   Editorial reading styles for marked-rendered post HTML. Scoped to
+   .prose-blog so it never leaks into the app's component styles. */
+.prose-blog {
+  color: #4a434b;
+  font-size: 17px;
+  line-height: 1.75;
+}
+.prose-blog > * + * {
+  margin-top: 1.15em;
+}
+.prose-blog h2 {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  color: #2b2329;
+  margin-top: 2em;
+  margin-bottom: 0.1em;
+}
+.prose-blog h3 {
+  font-family: var(--font-serif);
+  font-size: 21px;
+  font-weight: 600;
+  color: #2b2329;
+  margin-top: 1.6em;
+}
+.prose-blog p {
+  margin: 0;
+}
+.prose-blog a {
+  color: #b25c72;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: rgba(178, 92, 114, 0.4);
+}
+.prose-blog a:hover {
+  text-decoration-color: #b25c72;
+}
+.prose-blog strong {
+  color: #2b2329;
+  font-weight: 700;
+}
+.prose-blog ul,
+.prose-blog ol {
+  padding-left: 1.3em;
+}
+.prose-blog li {
+  margin-top: 0.5em;
+}
+.prose-blog ul > li {
+  list-style: disc;
+}
+.prose-blog ol > li {
+  list-style: decimal;
+}
+.prose-blog li::marker {
+  color: #b25c72;
+}
+.prose-blog blockquote {
+  border-left: 3px solid #b25c72;
+  padding-left: 1.1em;
+  font-style: italic;
+  color: #6b6068;
+}
+.prose-blog hr {
+  border: none;
+  border-top: 1px solid #ece5db;
+  margin: 2.2em 0;
+}
+.prose-blog code {
+  font-size: 0.9em;
+  background: #f1ebe2;
+  padding: 0.15em 0.4em;
+  border-radius: 6px;
+}
+
 /* Map cluster bubble — collapses dense areas, click to zoom in */
 .gc-cluster {
   font: 600 12px/1 var(--font-sans);

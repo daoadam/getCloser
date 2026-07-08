@@ -1,0 +1,123 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import Mascot from "../../Mascot";
+import { getPost, getPostSlugs, formatDate } from "@/lib/blog";
+
+// A single journal post. Server component: reads and renders the Markdown at
+// build time, one static page per slug. `params` is a Promise in this version
+// of Next — it must be awaited.
+
+// Prerender every post at build time.
+export function generateStaticParams() {
+  return getPostSlugs().map((slug) => ({ slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const post = getPost(slug);
+  if (!post) return { title: "Post not found · GetCloser" };
+  return {
+    title: `${post.title} · GetCloser`,
+    description: post.excerpt,
+    alternates: { canonical: `/blog/${post.slug}` },
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      type: "article",
+      publishedTime: post.date || undefined,
+      authors: [post.author],
+    },
+  };
+}
+
+function HeartGap({ stroke = "currentColor" }: { stroke?: string }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12 21s-7-4.35-9.5-8.5C.5 9 2.5 5 6 5c2 0 3.2 1.2 4 2.3"
+        stroke={stroke}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M12 21s7-4.35 9.5-8.5C23.5 9 21.5 5 18 5c-2 0-3.2 1.2-4 2.3"
+        stroke={stroke}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export default async function BlogPostPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const post = getPost(slug);
+  if (!post) notFound();
+
+  return (
+    <main className="min-h-full bg-[#faf6f1] pb-20">
+      {/* ── Top bar ─────────────────────────────────────────── */}
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#efe8df] bg-white/90 px-5 py-3.5 backdrop-blur sm:px-14">
+        <Link href="/" className="flex items-center gap-2" aria-label="GetCloser home">
+          <HeartGap stroke="#b25c72" />
+          <span className="font-display text-lg font-semibold text-[#b25c72]">GetCloser</span>
+        </Link>
+        <Link
+          href="/blog"
+          className="rounded-xl border border-[#ddd5cb] bg-white px-4 py-2 text-[13.5px] font-semibold text-[#3f3a40] transition hover:bg-[#faf6f1]"
+        >
+          ← All posts
+        </Link>
+      </div>
+
+      <article className="mx-auto max-w-[680px] px-5 py-10 sm:px-8 sm:py-14">
+        {/* ── Post header ───────────────────────────────────── */}
+        <div className="flex items-center gap-2.5 text-[12.5px] font-medium text-[#9a8f96]">
+          <span>{formatDate(post.date)}</span>
+          <span aria-hidden>·</span>
+          <span>{post.readingMinutes} min read</span>
+          <span aria-hidden>·</span>
+          <span>By {post.author}</span>
+        </div>
+        <h1 className="mt-3 font-display text-[32px] font-semibold leading-[1.08] tracking-[-0.02em] sm:text-[42px]">
+          {post.title}
+        </h1>
+
+        {/* ── Body ──────────────────────────────────────────── */}
+        <div
+          className="prose-blog mt-8"
+          dangerouslySetInnerHTML={{ __html: post.html }}
+        />
+
+        {/* ── Call to action into the simulator ─────────────── */}
+        <div className="mt-12 flex flex-col items-start gap-4 rounded-[20px] border border-[#b25c72]/20 bg-[#b25c72]/[0.06] p-6 sm:flex-row sm:items-center sm:gap-5 sm:p-7">
+          <Mascot mood="wave" size={68} className="shrink-0" />
+          <div className="flex-1">
+            <div className="font-display text-[19px] font-semibold text-[#2b2329]">
+              Now run your own numbers
+            </div>
+            <p className="mt-1 text-[14px] leading-relaxed text-[#6b6068]">
+              See exactly what closing the distance would cost the two of you — free, about two
+              minutes.
+            </p>
+          </div>
+          <Link
+            href="/?start=1"
+            className="rounded-xl bg-[#b25c72] px-5 py-3 text-[14px] font-semibold text-white transition hover:brightness-105"
+          >
+            Start the calculator →
+          </Link>
+        </div>
+      </article>
+    </main>
+  );
+}
