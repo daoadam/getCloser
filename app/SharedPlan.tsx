@@ -168,7 +168,7 @@ export default function SharedPlan({
         <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-3.5 sm:px-8">
           <div className="flex items-center gap-2">
             <HeartGap stroke="#b25c72" />
-            <span className="font-display text-lg font-semibold text-[#b25c72]">GetCloser</span>
+            <span className="font-display text-lg font-semibold text-[#b25c72]">Close the Distance</span>
           </div>
           <div className="flex items-center gap-3 text-[13px]">
             <span className="hidden items-center gap-1.5 text-zinc-400 sm:flex">

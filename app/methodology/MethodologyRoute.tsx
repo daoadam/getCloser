@@ -11,8 +11,8 @@ export default function MethodologyRoute() {
   const router = useRouter();
   return (
     <Methodology
-      onBack={() => router.push("/")}
-      onStart={() => router.push("/?start=1")}
+      onBack={() => router.push("/calculator")}
+      onStart={() => router.push("/calculator?start=1")}
     />
   );
 }

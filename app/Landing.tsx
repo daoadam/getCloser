@@ -1,7 +1,7 @@
 "use client";
 
 // The front door before the calculator — a marketing landing page that sells
-// the one question GetCloser answers, then hands the couple to the intake.
+// the one question Close the Distance answers, then hands the couple to the intake.
 // Every call-to-action funnels into onStart (→ step 1 of the simulator).
 
 import Mascot from "./Mascot";
@@ -60,18 +60,18 @@ export default function Landing({
       <nav className="flex items-center justify-between px-6 py-5 sm:px-14">
         <div className="flex items-center gap-2 text-[#b25c72]">
           <HeartGap />
-          <span className="font-display text-xl font-semibold tracking-tight">GetCloser</span>
+          <span className="font-display text-xl font-semibold tracking-tight">Close the Distance</span>
         </div>
         <div className="flex items-center gap-7 text-sm font-medium text-zinc-600">
           <a href="#how" className="hidden hover:text-[#b25c72] sm:inline">How it works</a>
-          <a href="#why" className="hidden hover:text-[#b25c72] sm:inline">Why GetCloser</a>
+          <a href="#why" className="hidden hover:text-[#b25c72] sm:inline">Why Close the Distance</a>
           <a href="#anywhere" className="hidden hover:text-[#b25c72] sm:inline">Anywhere</a>
           {onGuides && (
             <button onClick={onGuides} className="hidden hover:text-[#b25c72] sm:inline">
               Guides
             </button>
           )}
-          <a href="/blog" className="hidden hover:text-[#b25c72] sm:inline">Journal</a>
+          <a href="/" className="hidden hover:text-[#b25c72] sm:inline">Journal</a>
           <button
             onClick={onStart}
             className="rounded-xl bg-[#b25c72] px-5 py-2.5 font-semibold text-white transition hover:bg-[#9c4a60]"
@@ -168,7 +168,7 @@ export default function Landing({
       {/* ── What you get ────────────────────────────────────── */}
       <section id="why" className="px-6 pt-20 sm:px-14">
         <div className="mx-auto max-w-6xl text-center">
-          <Eyebrow>What GetCloser tells you</Eyebrow>
+          <Eyebrow>What Close the Distance tells you</Eyebrow>
           <h2 className="mt-3.5 font-display text-[2.4rem] font-semibold tracking-tight sm:text-[2.6rem]">
             The whole money-and-place picture, in plain words
           </h2>
@@ -268,7 +268,7 @@ export default function Landing({
               The same life, priced in 47 countries.
             </h2>
             <p className="mt-4 max-w-md text-[17px] leading-relaxed text-[#6b6068]">
-              Curious if you&rsquo;d be better off somewhere else? GetCloser re-runs your exact plan
+              Curious if you&rsquo;d be better off somewhere else? Close the Distance re-runs your exact plan
               across the world in your own currency — so you can compare like with like, then move
               your whole scenario with one tap.
             </p>
@@ -313,7 +313,7 @@ export default function Landing({
           <div className="max-w-sm">
             <div className="mb-3 flex items-center gap-2">
               <HeartGap stroke="#f3c9d4" />
-              <span className="font-display text-lg font-semibold text-[#f3c9d4]">GetCloser</span>
+              <span className="font-display text-lg font-semibold text-[#f3c9d4]">Close the Distance</span>
             </div>
             <p className="text-[12.5px] leading-relaxed text-[#8f868d]">
               Indicative figures for a two-bedroom place and typical living costs. Visa, stamp duty
@@ -329,7 +329,7 @@ export default function Landing({
                 ...(onGuides ? { Guides: onGuides } : {}),
                 ...(onFaq ? { FAQ: onFaq } : {}),
               }}
-              hrefs={{ Journal: "/blog" }}
+              hrefs={{ Journal: "/" }}
             />
             <FooterCol
               heading="Trust"

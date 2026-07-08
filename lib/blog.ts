@@ -52,7 +52,7 @@ function toMeta(slug: string, parsed: matter.GrayMatterFile<string>): PostMeta {
     title: String(data.title ?? slug),
     date: String(data.date ?? ""),
     excerpt: String(data.excerpt ?? ""),
-    author: String(data.author ?? "GetCloser"),
+    author: String(data.author ?? "Close the Distance"),
     readingMinutes: estimateReadingMinutes(parsed.content),
   };
 }

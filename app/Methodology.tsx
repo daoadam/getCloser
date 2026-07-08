@@ -71,10 +71,10 @@ export default function Methodology({
         <button
           onClick={onBack}
           className="flex items-center gap-2"
-          aria-label="GetCloser home"
+          aria-label="Close the Distance home"
         >
           <HeartGap stroke="#b25c72" />
-          <span className="font-display text-lg font-semibold text-[#b25c72]">GetCloser</span>
+          <span className="font-display text-lg font-semibold text-[#b25c72]">Close the Distance</span>
         </button>
         <button
           onClick={onBack}
@@ -287,7 +287,7 @@ export default function Methodology({
         <div className="mt-5 flex items-start gap-3.5 rounded-[18px] border border-[#ece5db] bg-white p-5 sm:px-6">
           <span className="text-xl">⚠️</span>
           <p className="text-[13.5px] leading-relaxed text-[#6b6068]">
-            GetCloser is a planning tool to start a conversation, not financial or immigration
+            Close the Distance is a planning tool to start a conversation, not financial or immigration
             advice. Figures are estimates and your real numbers will vary — check current rates, visa
             rules and prices with a qualified professional before making decisions.
           </p>

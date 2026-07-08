@@ -12,8 +12,8 @@ export default function LegalRoute() {
   return (
     <Legal
       initialTab="terms"
-      onBack={() => router.push("/")}
-      onStart={() => router.push("/?start=1")}
+      onBack={() => router.push("/calculator")}
+      onStart={() => router.push("/calculator?start=1")}
     />
   );
 }

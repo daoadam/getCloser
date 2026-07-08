@@ -1063,7 +1063,7 @@ function Results({
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-2 text-[#b25c72]">
             <HeartGap />
-            <span className="font-display text-xl font-semibold tracking-tight">GetCloser</span>
+            <span className="font-display text-xl font-semibold tracking-tight">Close the Distance</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <button
@@ -1442,7 +1442,7 @@ function Results({
           <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
             {saveState === "done" ? (
               <p className="text-sm font-medium text-emerald-700">
-                You&apos;re on the list 💛 We&apos;ll let you know as GetCloser grows.
+                You&apos;re on the list 💛 We&apos;ll let you know as Close the Distance grows.
               </p>
             ) : (
               <form onSubmit={handleSave}>
@@ -2340,7 +2340,7 @@ function IntakeShell({ step, children }: { step: number; children: React.ReactNo
       <aside className="hidden bg-gradient-to-b from-[#3b2a40] to-[#5a3f54] px-10 py-11 text-white lg:flex lg:w-[420px] lg:flex-none lg:flex-col">
         <div className="mb-9 flex items-center gap-2 text-[#f3c9d4]">
           <HeartGap />
-          <span className="font-display text-xl font-semibold tracking-tight">GetCloser</span>
+          <span className="font-display text-xl font-semibold tracking-tight">Close the Distance</span>
         </div>
 
         <div className="mb-1 flex justify-center">
@@ -2384,7 +2384,7 @@ function IntakeShell({ step, children }: { step: number; children: React.ReactNo
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-[#f3c9d4]">
             <HeartGap />
-            <span className="font-display text-base font-semibold tracking-tight">GetCloser</span>
+            <span className="font-display text-base font-semibold tracking-tight">Close the Distance</span>
           </div>
           <span className="text-xs text-[#d7c4cd]">
             Step {step} / {INTAKE_STEPS}

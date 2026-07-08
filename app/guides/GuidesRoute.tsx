@@ -11,8 +11,8 @@ export default function GuidesRoute() {
   const router = useRouter();
   return (
     <Guides
-      onBack={() => router.push("/")}
-      onStart={() => router.push("/?start=1")}
+      onBack={() => router.push("/calculator")}
+      onStart={() => router.push("/calculator?start=1")}
     />
   );
 }

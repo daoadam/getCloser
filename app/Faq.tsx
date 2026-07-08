@@ -1,7 +1,7 @@
 "use client";
 
 // The FAQ — "the honest answers." Plain-spoken responses to what couples ask
-// most: where the numbers come from, visas, privacy, and what GetCloser is (and
+// most: where the numbers come from, visas, privacy, and what Close the Distance is (and
 // isn't). Answers are kept in lockstep with lib/calc.ts and the Methodology
 // page, so nothing here over-promises.
 
@@ -97,7 +97,7 @@ const CATEGORIES: Category[] = [
   },
   {
     id: "using",
-    title: "Using GetCloser",
+    title: "Using Close the Distance",
     chip: "Using it",
     items: [
       {
@@ -110,7 +110,7 @@ const CATEGORIES: Category[] = [
       },
       {
         q: "Is this financial advice?",
-        a: "No — GetCloser is a planning tool to help you start the conversation, not financial or immigration advice. Your real numbers will vary, and big decisions deserve a chat with a qualified professional. We'll always be upfront about where our figures are estimates.",
+        a: "No — Close the Distance is a planning tool to help you start the conversation, not financial or immigration advice. Your real numbers will vary, and big decisions deserve a chat with a qualified professional. We'll always be upfront about where our figures are estimates.",
       },
     ],
   },
@@ -179,7 +179,7 @@ function StillStuck() {
         We read every message.
       </p>
       <a
-        href="mailto:hello@getcloser.app?subject=GetCloser%20question"
+        href="mailto:hello@closethedistance.blog?subject=Close%20the%20Distance%20question"
         className="mt-3 block rounded-xl bg-[#b25c72] py-[11px] text-center text-[13.5px] font-semibold text-white transition hover:brightness-105"
       >
         Email us
@@ -214,9 +214,9 @@ export default function Faq({
     <main className="min-h-full bg-[#faf6f1] pb-20">
       {/* ── Top bar ─────────────────────────────────────────── */}
       <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#efe8df] bg-white/90 px-5 py-3.5 backdrop-blur sm:px-14">
-        <button onClick={onBack} className="flex items-center gap-2" aria-label="GetCloser home">
+        <button onClick={onBack} className="flex items-center gap-2" aria-label="Close the Distance home">
           <HeartGap stroke="#b25c72" />
-          <span className="font-display text-lg font-semibold text-[#b25c72]">GetCloser</span>
+          <span className="font-display text-lg font-semibold text-[#b25c72]">Close the Distance</span>
         </button>
         <button
           onClick={onBack}
@@ -238,7 +238,7 @@ export default function Faq({
               The honest answers
             </h1>
             <p className="mt-3.5 max-w-[560px] text-[16px] leading-relaxed text-[#6b6068] sm:text-[18px]">
-              What couples ask us most — about the numbers, visas, your privacy, and what GetCloser
+              What couples ask us most — about the numbers, visas, your privacy, and what Close the Distance
               is (and isn&apos;t).
             </p>
           </div>

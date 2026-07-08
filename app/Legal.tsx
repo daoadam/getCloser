@@ -2,7 +2,7 @@
 
 // Privacy & Terms — "plain-English legal." Two tabs over one page: the Privacy
 // Policy and the Terms of Use. The voice matches the FAQ and Methodology pages
-// and every claim stays honest about what GetCloser actually does — it runs in
+// and every claim stays honest about what Close the Distance actually does — it runs in
 // your browser, stores an email only if you opt in, and never sells data.
 
 import { useState } from "react";
@@ -48,7 +48,7 @@ const DOCS: Record<LegalTab, Doc> = {
     label: "Privacy Policy",
     summaryTitle: "The short version",
     summary: [
-      "GetCloser runs in your browser. Your incomes, savings and plan stay on your device.",
+      "Close the Distance runs in your browser. Your incomes, savings and plan stay on your device.",
       "We only store an email address (and the plan attached to it) if you choose to save or email your plan.",
       "No accounts, no selling data, no ad tracking. Ask us any time and we’ll delete your email.",
     ],
@@ -121,10 +121,10 @@ const DOCS: Record<LegalTab, Doc> = {
           <>
             Questions about privacy? Email{" "}
             <a
-              href="mailto:privacy@getcloser.app?subject=GetCloser%20privacy%20question"
+              href="mailto:privacy@closethedistance.blog?subject=Close%20the%20Distance%20privacy%20question"
               className="font-semibold text-[#b25c72] hover:underline"
             >
-              privacy@getcloser.app
+              privacy@closethedistance.blog
             </a>{" "}
             and a real person will reply.
           </>
@@ -137,17 +137,17 @@ const DOCS: Record<LegalTab, Doc> = {
     label: "Terms of Use",
     summaryTitle: "The short version",
     summary: [
-      "GetCloser is a free planning tool to help two people start a conversation about moving in together.",
+      "Close the Distance is a free planning tool to help two people start a conversation about moving in together.",
       "The figures are honest estimates, not financial or immigration advice — confirm anything that matters.",
       "Use it for your own planning, don’t abuse it, and treat the numbers as a starting point.",
     ],
     sections: [
       {
         id: "what-it-is",
-        title: "What GetCloser is (and isn’t)",
+        title: "What Close the Distance is (and isn’t)",
         body: (
           <>
-            GetCloser is a free tool that estimates what it might cost two people in different places
+            Close the Distance is a free tool that estimates what it might cost two people in different places
             to live together. It’s a starting point for the conversation — <strong>not</strong>{" "}
             financial, tax, legal or immigration advice. Your real numbers will differ, and big
             decisions deserve a chat with a qualified professional. By using the tool you accept
@@ -173,7 +173,7 @@ const DOCS: Record<LegalTab, Doc> = {
         title: "Your use of the tool",
         body: (
           <>
-            Use GetCloser for your own personal planning. Please don’t try to break, overload,
+            Use Close the Distance for your own personal planning. Please don’t try to break, overload,
             scrape or misuse it, or use it to harm anyone. Plans you share carry the scenario inside
             the link, so only pass a link to people you’d trust with those numbers. You’re
             responsible for the information you enter and the decisions you make from it.
@@ -185,7 +185,7 @@ const DOCS: Record<LegalTab, Doc> = {
         title: "No warranties",
         body: (
           <>
-            GetCloser is provided “as is.” We work hard to keep it accurate and available, but we
+            Close the Distance is provided “as is.” We work hard to keep it accurate and available, but we
             can’t guarantee it will be error-free, uninterrupted, or right for your exact situation.
             Live exchange rates and third-party data can move or be unavailable, in which case we
             fall back to sensible built-in values.
@@ -211,10 +211,10 @@ const DOCS: Record<LegalTab, Doc> = {
             We may update these terms as the product grows; the “last updated” date above always
             reflects the current version. Questions? Email{" "}
             <a
-              href="mailto:hello@getcloser.app?subject=GetCloser%20terms%20question"
+              href="mailto:hello@closethedistance.blog?subject=Close%20the%20Distance%20terms%20question"
               className="font-semibold text-[#b25c72] hover:underline"
             >
-              hello@getcloser.app
+              hello@closethedistance.blog
             </a>
             .
           </>
@@ -232,7 +232,7 @@ function ContactCard() {
         A real person reads every message.
       </p>
       <a
-        href="mailto:hello@getcloser.app?subject=GetCloser%20legal%20question"
+        href="mailto:hello@closethedistance.blog?subject=Close%20the%20Distance%20legal%20question"
         className="mt-3 block rounded-xl bg-[#b25c72] py-[11px] text-center text-[13.5px] font-semibold text-white transition hover:brightness-105"
       >
         Email us
@@ -260,9 +260,9 @@ export default function Legal({
     <main className="min-h-full bg-[#faf6f1] pb-20">
       {/* ── Top bar ─────────────────────────────────────────── */}
       <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#efe8df] bg-white/90 px-5 py-3.5 backdrop-blur sm:px-14">
-        <button onClick={onBack} className="flex items-center gap-2" aria-label="GetCloser home">
+        <button onClick={onBack} className="flex items-center gap-2" aria-label="Close the Distance home">
           <HeartGap stroke="#b25c72" />
-          <span className="font-display text-lg font-semibold text-[#b25c72]">GetCloser</span>
+          <span className="font-display text-lg font-semibold text-[#b25c72]">Close the Distance</span>
         </button>
         <button
           onClick={onBack}

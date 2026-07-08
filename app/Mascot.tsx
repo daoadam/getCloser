@@ -1,4 +1,4 @@
-// Pip — GetCloser's lovebird mascot. Lovebirds pair-bond for life and pine
+// Pip — Close the Distance's lovebird mascot. Lovebirds pair-bond for life and pine
 // when apart, which is the whole brief. Pip reacts to the couple's verdict.
 
 export type Mood = "wave" | "happy" | "think" | "worry";

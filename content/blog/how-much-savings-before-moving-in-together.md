@@ -31,7 +31,7 @@ Never spend your last dollar closing the distance. You want a normal emergency f
 
 ## Putting a real number on it
 
-Here's the thing: you don't have to guess at any of these. That's exactly the maths the [GetCloser simulator](/) does — it takes your two situations and works out all three buckets for your specific cities, so instead of a vague "we need heaps," you get "we need *this much*, and at what we're saving, we're about *this far* away."
+Here's the thing: you don't have to guess at any of these. That's exactly the maths the [Close the Distance calculator](/calculator) does — it takes your two situations and works out all three buckets for your specific cities, so instead of a vague "we need heaps," you get "we need *this much*, and at what we're saving, we're about *this far* away."
 
 And "this far away" is a genuinely different feeling from "someday." One is a countdown. The other is a wish.
 
