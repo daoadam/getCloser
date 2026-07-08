@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Mascot from "./Mascot";
+import CoverArt from "./CoverArt";
+import RevealFx from "./RevealFx";
 import { getAllPosts, formatDate, type PostMeta } from "@/lib/blog";
 import { getIgPhotos, type IgPhoto } from "@/lib/ig";
 import { TAG_STYLE, TAG_FALLBACK } from "@/lib/tags";
@@ -88,20 +90,23 @@ function FeaturedCard({ post }: { post: PostMeta }) {
             "radial-gradient(90% 90% at 85% 0%, rgba(178,92,114,0.10), transparent 55%)",
         }}
       />
-      <div className="relative">
-        <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#b25c72] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-white">
-          ✷ latest
+      <div className="relative grid gap-6 sm:grid-cols-[1fr_230px] sm:items-center">
+        <div>
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#b25c72] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-white">
+            ✷ latest
+          </div>
+          <PostMetaLine post={post} />
+          <h2 className="mt-3 max-w-[620px] font-display text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] text-[#2b2329] transition-colors group-hover:text-[#b25c72] sm:text-[38px]">
+            {post.title}
+          </h2>
+          <p className="mt-3 max-w-[560px] text-[15px] leading-relaxed text-[#6b6068]">
+            {post.excerpt}
+          </p>
+          <span className="mt-4 inline-block text-[14px] font-semibold text-[#b25c72]">
+            Read it →
+          </span>
         </div>
-        <PostMetaLine post={post} />
-        <h2 className="mt-3 max-w-[620px] font-display text-[28px] font-semibold leading-[1.1] tracking-[-0.015em] text-[#2b2329] transition-colors group-hover:text-[#b25c72] sm:text-[38px]">
-          {post.title}
-        </h2>
-        <p className="mt-3 max-w-[560px] text-[15px] leading-relaxed text-[#6b6068]">
-          {post.excerpt}
-        </p>
-        <span className="mt-4 inline-block text-[14px] font-semibold text-[#b25c72]">
-          Read it →
-        </span>
+        <CoverArt post={post} height={190} pip={72} className="hidden sm:flex" />
       </div>
     </Link>
   );
@@ -111,7 +116,7 @@ function PostCard({ post, tilt }: { post: PostMeta; tilt: number }) {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group relative rounded-[20px] border border-[#ece5db] bg-white p-6 transition hover:-translate-y-0.5 hover:border-[#b25c72]/40 hover:shadow-[0_8px_28px_-12px_rgba(178,92,114,0.4)] sm:p-7"
+      className="group relative block h-full rounded-[20px] border border-[#ece5db] bg-white p-6 transition hover:-translate-y-0.5 hover:border-[#b25c72]/40 hover:shadow-[0_8px_28px_-12px_rgba(178,92,114,0.4)] sm:p-7"
       style={{ transform: `rotate(${tilt}deg)` }}
     >
       {/* the corkboard pin */}
@@ -119,6 +124,7 @@ function PostCard({ post, tilt }: { post: PostMeta; tilt: number }) {
         aria-hidden
         className="absolute -top-1.5 left-1/2 h-3.5 w-3.5 -translate-x-1/2 rounded-full border-2 border-white bg-[#b25c72] shadow-[0_2px_4px_rgba(43,35,41,0.35)]"
       />
+      <CoverArt post={post} className="mb-4" />
       <PostMetaLine post={post} />
       <h2 className="mt-2.5 font-display text-[21px] font-semibold leading-tight tracking-[-0.01em] text-[#2b2329] transition-colors group-hover:text-[#b25c72] sm:text-[23px]">
         {post.title}
@@ -137,7 +143,7 @@ function CalculatorCard() {
   return (
     <Link
       href="/calculator"
-      className="group flex flex-col justify-between rounded-[20px] border border-[#b25c72]/25 bg-[#b25c72] p-6 text-white transition hover:-translate-y-0.5 hover:shadow-[0_12px_36px_-12px_rgba(178,92,114,0.8)] sm:p-7"
+      className="group flex h-full flex-col justify-between rounded-[20px] border border-[#b25c72]/25 bg-[#b25c72] p-6 text-white transition hover:-translate-y-0.5 hover:shadow-[0_12px_36px_-12px_rgba(178,92,114,0.8)] sm:p-7"
       style={{ transform: "rotate(0.4deg)" }}
     >
       <div>
@@ -279,26 +285,12 @@ export default function HomeJournalPage() {
             Close the Distance
           </span>
         </Link>
-        <div className="flex items-center gap-5">
-          <Link
-            href="/guides"
-            className="hidden text-[13.5px] font-medium text-[#6b6068] transition hover:text-[#b25c72] sm:inline"
-          >
-            Guides
-          </Link>
-          <Link
-            href="/faq"
-            className="hidden text-[13.5px] font-medium text-[#6b6068] transition hover:text-[#b25c72] sm:inline"
-          >
-            FAQ
-          </Link>
-          <Link
-            href="/calculator"
-            className="rounded-xl bg-[#b25c72] px-4 py-2 text-[13.5px] font-semibold text-white transition hover:brightness-105"
-          >
-            Open the calculator →
-          </Link>
-        </div>
+        <Link
+          href="/calculator"
+          className="rounded-xl bg-[#b25c72] px-4 py-2 text-[13.5px] font-semibold text-white transition hover:brightness-105"
+        >
+          Open the calculator →
+        </Link>
       </div>
 
       {/* ── The love ticker ─────────────────────────────────── */}
@@ -364,34 +356,42 @@ export default function HomeJournalPage() {
         </div>
 
         {/* ── Content + ad rail ─────────────────────────────── */}
-        <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_270px]">
+        <RevealFx className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_270px]">
           <div>
             {/* ── Featured ──────────────────────────────────── */}
             {featured ? (
-              <FeaturedCard post={featured} />
+              <div data-reveal>
+                <FeaturedCard post={featured} />
+              </div>
             ) : (
               <p className="text-[15px] text-[#6b6068]">No posts yet — check back soon.</p>
             )}
 
             {/* mobile-only: the fake ad lives in the feed, where it's seen */}
-            <div className="mt-5 lg:hidden">
+            <div className="mt-5 lg:hidden" data-reveal>
               <CalculatorFakeAd />
             </div>
 
             {/* ── The rest + the tool card ──────────────────── */}
             <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
               {rest.slice(0, 2).map((post, i) => (
-                <PostCard key={post.slug} post={post} tilt={tilts[i % tilts.length]} />
+                <div key={post.slug} data-reveal className="h-full">
+                  <PostCard post={post} tilt={tilts[i % tilts.length]} />
+                </div>
               ))}
-              <CalculatorCard />
+              <div data-reveal className="h-full">
+                <CalculatorCard />
+              </div>
               {rest.slice(2).map((post, i) => (
-                <PostCard key={post.slug} post={post} tilt={tilts[(i + 2) % tilts.length]} />
+                <div key={post.slug} data-reveal className="h-full">
+                  <PostCard post={post} tilt={tilts[(i + 2) % tilts.length]} />
+                </div>
               ))}
             </div>
           </div>
 
           <AdRail photos={photos} />
-        </div>
+        </RevealFx>
 
         {/* ── Sign-off ──────────────────────────────────────── */}
         <div className="mt-14 flex flex-col items-center gap-2 text-center">

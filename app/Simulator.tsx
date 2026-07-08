@@ -12,7 +12,6 @@ import Mascot, { Mood } from "./Mascot";
 import Landing from "./Landing";
 import Methodology from "./Methodology";
 import Faq from "./Faq";
-import Guides from "./Guides";
 import SharedPlan from "./SharedPlan";
 import Legal, { LegalTab } from "./Legal";
 
@@ -98,7 +97,6 @@ export default function Simulator() {
   const [step, setStep] = useState(0); // 0 = welcome, 1..5 = intake, 6 = results
   const [showMethodology, setShowMethodology] = useState(false); // trust page overlay
   const [showFaq, setShowFaq] = useState(false); // FAQ overlay
-  const [showGuides, setShowGuides] = useState(false); // Guides hub overlay
   const [legalTab, setLegalTab] = useState<LegalTab | null>(null); // Privacy/Terms overlay
   // A scenario opened via a #s=… link shows the read-only SharedPlan snapshot.
   const [sharedView, setSharedView] = useState(false);
@@ -470,18 +468,6 @@ export default function Simulator() {
     );
   }
 
-  if (showGuides) {
-    return (
-      <Guides
-        onBack={() => setShowGuides(false)}
-        onStart={() => {
-          setShowGuides(false);
-          setStep(1);
-        }}
-      />
-    );
-  }
-
   if (legalTab) {
     return (
       <Legal
@@ -501,7 +487,6 @@ export default function Simulator() {
         onStart={next}
         onMethodology={() => setShowMethodology(true)}
         onFaq={() => setShowFaq(true)}
-        onGuides={() => setShowGuides(true)}
         onLegal={(tab) => setLegalTab(tab)}
       />
     );

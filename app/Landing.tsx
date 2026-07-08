@@ -46,13 +46,11 @@ export default function Landing({
   onStart,
   onMethodology,
   onFaq,
-  onGuides,
   onLegal,
 }: {
   onStart: () => void;
   onMethodology?: () => void;
   onFaq?: () => void;
-  onGuides?: () => void;
   onLegal?: (tab: LegalTab) => void;
 }) {
   return (
@@ -67,11 +65,6 @@ export default function Landing({
           <a href="#how" className="hidden hover:text-[#b25c72] sm:inline">How it works</a>
           <a href="#why" className="hidden hover:text-[#b25c72] sm:inline">Why Close the Distance</a>
           <a href="#anywhere" className="hidden hover:text-[#b25c72] sm:inline">Anywhere</a>
-          {onGuides && (
-            <button onClick={onGuides} className="hidden hover:text-[#b25c72] sm:inline">
-              Guides
-            </button>
-          )}
           <Link href="/" className="hidden hover:text-[#b25c72] sm:inline">Journal</Link>
           <button
             onClick={onStart}
@@ -325,9 +318,8 @@ export default function Landing({
           <div className="flex gap-14 text-[13.5px]">
             <FooterCol
               heading="Product"
-              links={["How it works", "Guides", "Journal", "FAQ"]}
+              links={["How it works", "Journal", "FAQ"]}
               actions={{
-                ...(onGuides ? { Guides: onGuides } : {}),
                 ...(onFaq ? { FAQ: onFaq } : {}),
               }}
               hrefs={{ Journal: "/" }}
