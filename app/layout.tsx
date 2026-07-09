@@ -51,8 +51,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${fraunces.variable} h-full antialiased`}>
+    // suppressHydrationWarning: the inline theme script below sets data-theme
+    // before hydration, so the server/client <html> attributes legitimately differ
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${fraunces.variable} h-full antialiased`}
+    >
       <body className="min-h-full flex flex-col">
+        {/* keyboard users can jump past the sticky bars straight to content */}
+        <a href="#main" className="skip-link">
+          Skip to content
+        </a>
         {/* apply the saved theme before first paint — no flash */}
         <script
           dangerouslySetInnerHTML={{

@@ -54,7 +54,7 @@ export default function Landing({
   onLegal?: (tab: LegalTab) => void;
 }) {
   return (
-    <main className="flex-1 scroll-smooth">
+    <main id="main" className="flex-1 scroll-smooth">
       {/* ── Nav ─────────────────────────────────────────────── */}
       <nav className="flex items-center justify-between px-6 py-5 sm:px-14">
         <div className="flex items-center gap-2 text-[#b25c72]">
@@ -109,7 +109,7 @@ export default function Landing({
               >
                 Start your plan — free →
               </button>
-              <span className="text-sm text-[#a59ca2]">No sign-up · ~1 minute</span>
+              <span className="text-sm text-[#a59ca2]">Free · no account · ~2 minutes</span>
             </div>
             <div className="mt-9 flex items-center gap-6">
               <Stat value="191" label="cities" />
@@ -152,7 +152,7 @@ export default function Landing({
       {/* ── Trust strip ─────────────────────────────────────── */}
       <div className="border-y border-[#efe8df] bg-white px-6 py-4 sm:px-14">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-10 gap-y-2 text-center text-[13.5px] text-[#8a7f86]">
-          <span>✓ Free, no sign-up</span>
+          <span>✓ Free, no account</span>
           <span>✓ Works anywhere in the world</span>
           <span>✓ Multi-currency, live rates</span>
           <span>✓ Not financial advice — a real starting point</span>
@@ -290,7 +290,7 @@ export default function Landing({
             Ready to close the distance?
           </h2>
           <p className="mx-auto mt-3.5 max-w-md text-lg text-[#6b6068]">
-            Answer a few quick questions and see your plan in about a minute. Free, no sign-up.
+            Answer a few quick questions and see your plan in a couple of minutes. Free, no account needed.
           </p>
           <button
             onClick={onStart}

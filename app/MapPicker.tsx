@@ -69,6 +69,8 @@ export default function MapPicker({
         center: [134, -28],
         zoom: 3,
         attributionControl: false,
+        // One-finger swipes scroll the page, not the map — no scroll trap on mobile.
+        cooperativeGestures: true,
       });
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
       mapRef.current = map;

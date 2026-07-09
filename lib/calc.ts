@@ -90,6 +90,9 @@ export type SimInput = {
   emergencyMonths: number;
   petRelocation: number;
   transferFeePct: number;
+  // The couple already holds the right to live at the destination
+  // (citizenship, PR, free movement) — zeroes visa cost and wait.
+  visaWaived?: boolean;
   // Incomes/savings/debts are passed in AUD; the result is computed and shown
   // in displayCurrency (usually the destination's currency).
   displayCurrency: string;
@@ -274,8 +277,12 @@ export function simulate(input: SimInput): SimResult {
     ? deposit + stampDuty + a2d(CONVEYANCING)
     : l2d(Math.round(area.weeklyRent2br * 6)) + a2d(1500); // bond (4wk) + 2wk advance + setup buffer
   const destState = areaState(area);
-  const relocA = relocationFor(locationA, area.country, destState);
-  const relocB = relocationFor(locationB, area.country, destState);
+  let relocA = relocationFor(locationA, area.country, destState);
+  let relocB = relocationFor(locationB, area.country, destState);
+  if (input.visaWaived) {
+    relocA = { ...relocA, visa: 0, visaMonths: 0 };
+    relocB = { ...relocB, visa: 0, visaMonths: 0 };
+  }
   const moveCost = a2d(relocA.move + relocB.move);
   const visaCost = a2d(relocA.visa + relocB.visa);
   const relocationCost = moveCost + visaCost;
@@ -290,10 +297,14 @@ export function simulate(input: SimInput): SimResult {
   const visitCost = a2d(Math.round(visitsPerYear * (apartMonths / 12) * flightPerVisit));
 
   // After landing, a relocating partner often earns nothing for a while
-  // (job hunt, visa work-rights). Budget to cover their share of that gap.
+  // (job hunt, visa work-rights). Cover their missing income — or at least
+  // their half of the monthly costs, so a low/no-income mover still gets a
+  // real runway instead of a $0 buffer.
+  const moverCover = (income: number) => Math.max(a2d(income), totalCosts / 2);
   const transitionBuffer = Math.round(
-    (relocA.relocates ? a2d(incomeA) : 0) * transitionMonths +
-      (relocB.relocates ? a2d(incomeB) : 0) * transitionMonths
+    ((relocA.relocates ? moverCover(incomeA) : 0) +
+      (relocB.relocates ? moverCover(incomeB) : 0)) *
+      transitionMonths
   );
 
   const savingsD = a2d(savings);
@@ -329,7 +340,6 @@ export function simulate(input: SimInput): SimResult {
   else verdict = "not-yet";
 
   // Future projection (linear — before any price growth, kept honest).
-  const remainingSavings = Math.max(savingsD - upfront, 0);
   const depositTarget = deposit; // 20% of median house
 
   let yearsToDeposit: number | null;
@@ -348,15 +358,18 @@ export function simulate(input: SimInput): SimResult {
       };
     });
   } else {
-    // Renting: the surplus you save builds toward a future deposit.
+    // Renting: the surplus builds toward a future deposit — but the upfront
+    // wall gets paid first. netToday goes negative while the gap is unsaved,
+    // so early milestones don't count money that's already spoken for.
+    const netToday = savingsD - upfront;
     yearsToDeposit =
-      remainingSavings >= depositTarget
+      netToday >= depositTarget
         ? 0
         : monthlySave > 0
-          ? (depositTarget - remainingSavings) / (monthlySave * 12)
+          ? (depositTarget - netToday) / (monthlySave * 12)
           : null;
     milestones = HORIZONS.map((years) => {
-      const saved = remainingSavings + monthlySave * 12 * years;
+      const saved = Math.max(0, netToday + monthlySave * 12 * years);
       return {
         years,
         saved,

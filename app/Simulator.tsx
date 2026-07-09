@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { track } from "@vercel/analytics";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Area, AREAS_BY_COUNTRY, DESTINATION_COUNTRIES, areaState, areasByRegion, getArea } from "@/lib/areas";
+import { Area, AREAS_BY_COUNTRY, CUSTOM_AREA_ID, CustomAreaInput, DESTINATION_COUNTRIES, areaState, areasByRegion, customAreaFor, getArea } from "@/lib/areas";
 import { CostLine, fmt, Housing, Lifestyle, Location, relocationFor, simulate } from "@/lib/calc";
 import { AU_STATES, COUNTRIES_BY_REGION, getCountry, REGION_LABEL } from "@/lib/countries";
 import { getSupabaseClient } from "@/lib/supabase/client";
@@ -127,8 +128,9 @@ export default function Simulator() {
   const [locationA, setLocationA] = useState<Location>({ country: "AU", state: "SA" });
   const [locationB, setLocationB] = useState<Location>({ country: "GB", state: "" });
   // Income is entered in each person's home currency, then converted to AUD.
-  const [incomeLocalA, setIncomeLocalA] = useState(3800);
-  const [incomeLocalB, setIncomeLocalB] = useState(3400);
+  // Ships empty — a verdict computed from numbers nobody typed isn't a verdict.
+  const [incomeLocalA, setIncomeLocalA] = useState(0);
+  const [incomeLocalB, setIncomeLocalB] = useState(0);
   // Currency defaults to each person's country but can be overridden — you can
   // live in one country and be paid in another.
   const [currencyA, setCurrencyA] = useState("AUD");
@@ -145,8 +147,13 @@ export default function Simulator() {
   const [transferFeePct, setTransferFeePct] = useState(2);
   const [destCountry, setDestCountry] = useState("AU");
   const [areaId, setAreaId] = useState("au-adl-prospect");
+  // "Can't find your suburb" numbers — kept even while a listed area is
+  // selected, so switching back doesn't lose what the user typed.
+  const [customSpot, setCustomSpot] = useState<CustomAreaInput | null>(null);
   const [areaQuery, setAreaQuery] = useState("");
   const [housing, setHousing] = useState<Housing>("rent");
+  // Citizenship / PR / free movement at the destination — skips visa cost & wait.
+  const [visaSorted, setVisaSorted] = useState(false);
   const [transitionMonths, setTransitionMonths] = useState(3);
   const [visitsPerYear, setVisitsPerYear] = useState(2);
   const [lifestyle, setLifestyle] = useState<Lifestyle>("comfortable");
@@ -182,44 +189,67 @@ export default function Simulator() {
     }
   }, []);
 
-  // Restore a scenario shared via #s=… link (read + edit your own copy).
+  // True once we've checked for a shared link / saved session, so the save
+  // effect below can never overwrite a good save with blank defaults.
+  const hydratedRef = useRef(false);
+
+  // Apply a serialized scenario — a #s= share link or the locally saved session.
+  const applyScenario = (o: ReturnType<typeof JSON.parse>) => {
+    skipClearRef.current = true;
+    setYourName(o.yourName ?? "");
+    setPartnerName(o.partnerName ?? "");
+    setLocationA(o.locationA);
+    setLocationB(o.locationB);
+    setIncomeLocalA(o.incomeLocalA);
+    setIncomeLocalB(o.incomeLocalB);
+    setSavings(o.savings);
+    setMonthlyDebts(o.monthlyDebts);
+    setDestCountry(o.destCountry);
+    setAreaId(o.areaId);
+    setCustomSpot(o.customSpot ?? null);
+    setHousing(o.housing);
+    setVisaSorted(o.visaSorted ?? false);
+    setTransitionMonths(o.transitionMonths);
+    setVisitsPerYear(o.visitsPerYear);
+    setLifestyle(o.lifestyle);
+    setKids(o.kids);
+    setEmergencyOn(o.emergencyOn);
+    setEmergencyMonths(o.emergencyMonths);
+    setPetsOn(o.petsOn);
+    setPetRelocation(o.petRelocation);
+    setTransferOn(o.transferOn);
+    setTransferFeePct(o.transferFeePct);
+    setCostOverrides(o.costOverrides ?? {});
+    setExtraCosts(o.extraCosts ?? []);
+    setMoveInDate(o.moveInDate ?? "");
+  };
+
+  // Restore a scenario shared via #s=… link (read + edit your own copy), or
+  // fall back to the locally saved session so a refresh never loses work.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const m = window.location.hash.match(/^#s=(.+)$/);
-    if (!m) return;
     try {
-      const o = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+      const m = window.location.hash.match(/^#s=(.+)$/);
+      if (m) {
+        const o = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+        if (o.v !== 1) return;
+        applyScenario(o);
+        setSharedAt(o.sharedAt ?? "");
+        setSharedView(true);
+        track("shared_plan_viewed");
+        window.history.replaceState(null, "", window.location.pathname);
+        return;
+      }
+      const raw = localStorage.getItem("ctd-plan");
+      if (!raw) return;
+      const o = JSON.parse(raw);
       if (o.v !== 1) return;
-      skipClearRef.current = true;
-      setYourName(o.yourName ?? "");
-      setPartnerName(o.partnerName ?? "");
-      setLocationA(o.locationA);
-      setLocationB(o.locationB);
-      setIncomeLocalA(o.incomeLocalA);
-      setIncomeLocalB(o.incomeLocalB);
-      setSavings(o.savings);
-      setMonthlyDebts(o.monthlyDebts);
-      setDestCountry(o.destCountry);
-      setAreaId(o.areaId);
-      setHousing(o.housing);
-      setTransitionMonths(o.transitionMonths);
-      setVisitsPerYear(o.visitsPerYear);
-      setLifestyle(o.lifestyle);
-      setKids(o.kids);
-      setEmergencyOn(o.emergencyOn);
-      setEmergencyMonths(o.emergencyMonths);
-      setPetsOn(o.petsOn);
-      setPetRelocation(o.petRelocation);
-      setTransferOn(o.transferOn);
-      setTransferFeePct(o.transferFeePct);
-      setCostOverrides(o.costOverrides ?? {});
-      setExtraCosts(o.extraCosts ?? []);
-      setMoveInDate(o.moveInDate ?? "");
-      setSharedAt(o.sharedAt ?? "");
-      setSharedView(true);
-      window.history.replaceState(null, "", window.location.pathname);
+      applyScenario(o);
+      if (typeof o.step === "number" && o.step >= 1) setStep(Math.min(o.step, RESULTS_STEP));
     } catch {
-      /* ignore a bad link */
+      /* ignore a bad link or a stale save */
+    } finally {
+      hydratedRef.current = true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -238,7 +268,13 @@ export default function Simulator() {
   const incomeA = toAUD(incomeLocalA, currencyA, rates);
   const incomeB = toAUD(incomeLocalB, currencyB, rates);
 
-  const area = getArea(areaId)!;
+  const area = useMemo(
+    () =>
+      areaId === CUSTOM_AREA_ID
+        ? customAreaFor(destCountry, customSpot ?? {})
+        : getArea(areaId)!,
+    [areaId, destCountry, customSpot]
+  );
 
   // Everything the sim needs except the area & display currency — reused to
   // compare cities. Incomes/savings/debts are in AUD here.
@@ -253,6 +289,7 @@ export default function Simulator() {
       monthlyDebts,
       locationA,
       locationB,
+      visaWaived: visaSorted,
       transitionMonths,
       visitsPerYear,
       emergencyMonths: emergencyOn ? emergencyMonths : 0,
@@ -262,8 +299,8 @@ export default function Simulator() {
     }),
     [
       incomeA, incomeB, housing, lifestyle, kids, savings, monthlyDebts, locationA, locationB,
-      transitionMonths, visitsPerYear, emergencyOn, emergencyMonths, petsOn, petRelocation,
-      transferOn, transferFeePct, rates,
+      visaSorted, transitionMonths, visitsPerYear, emergencyOn, emergencyMonths, petsOn,
+      petRelocation, transferOn, transferFeePct, rates,
     ]
   );
 
@@ -363,36 +400,62 @@ export default function Simulator() {
     return list.slice(0, 3);
   }, [baseInput, area, result, lifestyle, housing, destCountry, areaId]);
 
+  // The whole scenario, serializable — powers the share link and the local save.
+  const snapshot = useMemo(
+    () => ({
+      v: 1,
+      yourName,
+      partnerName,
+      locationA,
+      locationB,
+      incomeLocalA,
+      incomeLocalB,
+      savings,
+      monthlyDebts,
+      destCountry,
+      areaId,
+      customSpot,
+      housing,
+      visaSorted,
+      transitionMonths,
+      visitsPerYear,
+      lifestyle,
+      kids,
+      emergencyOn,
+      emergencyMonths,
+      petsOn,
+      petRelocation,
+      transferOn,
+      transferFeePct,
+      costOverrides,
+      extraCosts,
+      moveInDate,
+    }),
+    [
+      yourName, partnerName, locationA, locationB, incomeLocalA, incomeLocalB, savings, monthlyDebts,
+      destCountry, areaId, customSpot, housing, visaSorted, transitionMonths, visitsPerYear,
+      lifestyle, kids, emergencyOn, emergencyMonths, petsOn, petRelocation, transferOn,
+      transferFeePct, costOverrides, extraCosts, moveInDate,
+    ]
+  );
+
+  // Never lose work to a refresh — every change lands in localStorage once the
+  // couple is actually into the wizard. Restart clears it.
+  useEffect(() => {
+    if (!hydratedRef.current || sharedView || step < 1) return;
+    try {
+      localStorage.setItem("ctd-plan", JSON.stringify({ ...snapshot, step }));
+    } catch {
+      /* storage blocked or full — the session just won't survive a refresh */
+    }
+  }, [snapshot, step, sharedView]);
+
   // A shareable link with the whole scenario encoded — no backend needed.
   const shareUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
     try {
       const o = {
-        v: 1,
-        yourName,
-        partnerName,
-        locationA,
-        locationB,
-        incomeLocalA,
-        incomeLocalB,
-        savings,
-        monthlyDebts,
-        destCountry,
-        areaId,
-        housing,
-        transitionMonths,
-        visitsPerYear,
-        lifestyle,
-        kids,
-        emergencyOn,
-        emergencyMonths,
-        petsOn,
-        petRelocation,
-        transferOn,
-        transferFeePct,
-        costOverrides,
-        extraCosts,
-        moveInDate,
+        ...snapshot,
         // Stamped at share time so the snapshot can read "Shared · Jun 2026".
         sharedAt: new Date().toLocaleDateString("en-AU", { month: "short", year: "numeric" }),
       };
@@ -401,22 +464,32 @@ export default function Simulator() {
     } catch {
       return "";
     }
-  }, [
-    yourName, partnerName, locationA, locationB, incomeLocalA, incomeLocalB, savings, monthlyDebts,
-    destCountry, areaId, housing, transitionMonths, visitsPerYear, lifestyle, kids, emergencyOn,
-    emergencyMonths, petsOn, petRelocation, transferOn, transferFeePct, costOverrides, extraCosts,
-    moveInDate,
-  ]);
+  }, [snapshot]);
 
   const next = () => setStep((s) => Math.min(s + 1, RESULTS_STEP));
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
+  // Funnel beacons — step index and verdict only, never the couple's numbers.
+  const verdictRef = useRef(result.verdict);
+  verdictRef.current = result.verdict;
+  useEffect(() => {
+    if (step >= 1 && step <= INTAKE_STEPS) track("wizard_step", { step });
+    else if (step === RESULTS_STEP) track("results_viewed", { verdict: verdictRef.current });
+  }, [step]);
+
   // Results are gated behind an email (captured once — returning visitors with
   // a stored address skip straight through).
   const [gatePassed, setGatePassed] = useState(false);
+  const gatePassedRef = useRef(gatePassed);
+  gatePassedRef.current = gatePassed;
+  useEffect(() => {
+    if (step === RESULTS_STEP && !gatePassedRef.current) track("gate_viewed");
+  }, [step]);
   useEffect(() => {
     try {
-      if (localStorage.getItem("ctd-email")) setGatePassed(true);
+      if (localStorage.getItem("ctd-email") || localStorage.getItem("ctd-gate-skipped")) {
+        setGatePassed(true);
+      }
     } catch {
       /* private mode — gate shows, that's fine */
     }
@@ -425,6 +498,8 @@ export default function Simulator() {
   function pickCountry(c: string) {
     setDestCountry(c);
     setAreaQuery("");
+    // Typed numbers are in the old country's currency — they don't carry over.
+    setCustomSpot(null);
     const first = AREAS_BY_COUNTRY[c]?.[0];
     if (first) setAreaId(first.id);
   }
@@ -451,7 +526,7 @@ export default function Simulator() {
 
   if (step === RESULTS_STEP && !gatePassed) {
     return (
-      <main className="flex min-h-[100svh] flex-1 flex-col items-center justify-center bg-[#faf6f1] px-6 py-16 text-center">
+      <main id="main" className="flex min-h-[100svh] flex-1 flex-col items-center justify-center bg-[#faf6f1] px-6 py-16 text-center">
         <Mascot mood="happy" size={104} />
         <h1 className="mt-5 font-display text-[32px] font-semibold tracking-[-0.02em] text-[#2b2329] sm:text-[40px]">
           Your plan is ready 💌
@@ -465,12 +540,30 @@ export default function Simulator() {
             source="calculator-gate"
             buttonLabel="Show my plan →"
             failOpen
-            onDone={() => setGatePassed(true)}
+            onDone={() => {
+              track("gate_submitted");
+              setGatePassed(true);
+            }}
           />
         </div>
         <button
+          onClick={() => {
+            track("gate_skipped");
+            try {
+              // Skipping is a one-time ask — don't re-gate them on every visit.
+              localStorage.setItem("ctd-gate-skipped", "1");
+            } catch {
+              /* fine — they'll just see the gate again next session */
+            }
+            setGatePassed(true);
+          }}
+          className="mt-5 text-[13px] font-medium text-[#8a7f86] underline underline-offset-2 transition hover:text-[#b25c72]"
+        >
+          skip for now — show my plan
+        </button>
+        <button
           onClick={back}
-          className="mt-6 text-[13px] font-medium text-[#a59ca2] transition hover:text-[#b25c72]"
+          className="mt-3 text-[13px] font-medium text-[#a59ca2] transition hover:text-[#b25c72]"
         >
           ← back to the last step
         </button>
@@ -520,7 +613,16 @@ export default function Simulator() {
         saveState={saveState}
         setSaveState={setSaveState}
         onTweak={() => setStep(1)}
-        onRestart={() => setStep(0)}
+        onRestart={() => {
+          // A restart means a clean slate — drop the saved session and reload
+          // so every input truly resets.
+          try {
+            localStorage.removeItem("ctd-plan");
+          } catch {
+            /* fine — state still resets via the reload */
+          }
+          window.location.assign(window.location.pathname);
+        }}
         onMethodology={() => setShowMethodology(true)}
       />
     );
@@ -602,8 +704,8 @@ export default function Simulator() {
 
             {(needsVisa(locationA) || needsVisa(locationB)) && (
               <p className="mt-4 text-xs text-zinc-400">
-                Heads up: an AU partner visa runs ~{fmt(10000)} and typically ~18 months per person —
-                indicative only, not immigration advice.
+                Heads up: an AU partner visa runs ~{fmt(10000)} all-in and typically ~18 months to
+                process — indicative only, not immigration advice.
               </p>
             )}
             {(locationA.country === "NZ" || locationB.country === "NZ") && (
@@ -623,6 +725,8 @@ export default function Simulator() {
             subtitle="Take-home pay after tax, in your own currency — we'll convert to AUD."
             onBack={back}
             onNext={next}
+            nextDisabled={incomeLocalA + incomeLocalB <= 0}
+            nextHint="Enter at least one income first"
           >
             <EarnCard
               initial={(yourName.trim()[0] || "Y").toUpperCase()}
@@ -630,6 +734,7 @@ export default function Simulator() {
               who={yourName ? `${yourName}'s` : "Your"}
               value={incomeLocalA}
               onValue={setIncomeLocalA}
+              placeholder="e.g. 3,800"
               currency={currencyA}
               onCurrency={setCurrencyA}
               aud={incomeA}
@@ -640,6 +745,7 @@ export default function Simulator() {
               who={partnerName ? `${partnerName}'s` : "Their"}
               value={incomeLocalB}
               onValue={setIncomeLocalB}
+              placeholder="e.g. 3,400"
               currency={currencyB}
               onCurrency={setCurrencyB}
               aud={incomeB}
@@ -855,7 +961,7 @@ export default function Simulator() {
                 if (!groups.length) {
                   return (
                     <p className="px-1 py-6 text-center text-sm text-zinc-400">
-                      No match here — we list indicative areas, not every suburb yet.
+                      No match here — but you can type your own numbers just below. 👇
                     </p>
                   );
                 }
@@ -890,6 +996,18 @@ export default function Simulator() {
                 ));
               })()}
             </div>
+
+            <CustomSpotBox
+              key={`${destCountry}-${housing}`}
+              active={areaId === CUSTOM_AREA_ID}
+              housing={housing}
+              currency={AREAS_BY_COUNTRY[destCountry]?.[0]?.currency ?? "AUD"}
+              spot={customSpot}
+              onUse={(spot) => {
+                setCustomSpot(spot);
+                setAreaId(CUSTOM_AREA_ID);
+              }}
+            />
 
           </Step>
         )}
@@ -972,6 +1090,21 @@ export default function Simulator() {
                   step={1}
                   format={(n) => `${n} mo`}
                 />
+
+                {/* Citizenship / PR / free movement — the visa isn't everyone's story */}
+                {(relocationFor(locationA, area.country, areaState(area)).visa > 0 ||
+                  relocationFor(locationB, area.country, areaState(area)).visa > 0) && (
+                  <div className="mt-5 border-t border-zinc-200 pt-4">
+                    <ToggleRow
+                      on={visaSorted}
+                      onToggle={() => setVisaSorted((v) => !v)}
+                      title={`We already have the right to live in ${getCountry(area.country)?.name ?? "the destination"}`}
+                      hint="Citizenship, PR or free movement — skips the visa cost and wait"
+                    >
+                      {null}
+                    </ToggleRow>
+                  </div>
+                )}
               </div>
             )}
           </Step>
@@ -1085,10 +1218,22 @@ function Results({
   const cur = result.currency; // destination currency everything is shown in
   const symbol = currencySymbol(cur);
   const verdict = VERDICT_COPY[result.verdict];
+  // "Comfortable" is a monthly-budget verdict — don't let it read as "book the
+  // flights" while the upfront wall or the visa is still in the way.
+  const verdictBadge =
+    result.verdict !== "comfortable"
+      ? verdict.badge
+      : result.gap > 0
+        ? "You can afford life together — once the upfront's saved"
+        : result.visaMonths > 0
+          ? "You can afford it — the visa wait is the only gate"
+          : verdict.badge;
   // A single, plain-English line beneath the verdict that puts the money in context.
   const verdictSummary =
     result.verdict === "comfortable"
-      ? `Around ${fmt(result.leftover, cur)} left over each month after the basics.`
+      ? `Around ${fmt(result.leftover, cur)} left over each month after the basics${
+          result.gap > 0 ? ` — and ${fmt(result.gap, cur)} still to save before moving day` : ""
+        }.`
       : result.verdict === "tight"
         ? `Just ${fmt(result.leftover, cur)} spare each month — doable, but keep an eye on it.`
         : result.leftover < 0
@@ -1143,7 +1288,7 @@ function Results({
   }
 
   return (
-    <main className="flex-1">
+    <main id="main" className="flex-1">
       <div className="mx-auto max-w-6xl px-5 py-10">
         <div className="mb-8 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-[#b25c72]" title="Back to the journal">
@@ -1153,6 +1298,7 @@ function Results({
           <div className="flex items-center gap-2 text-sm">
             <button
               onClick={async () => {
+                track("share_clicked");
                 try {
                   await navigator.clipboard.writeText(shareUrl);
                   setCopied(true);
@@ -1175,7 +1321,7 @@ function Results({
         </div>
 
         <p className="text-sm text-zinc-500">
-          {couple} · moving to {a.city}, {a.region}
+          {couple} · moving to {a.id === CUSTOM_AREA_ID ? `${a.city} (your numbers)` : `${a.city}, ${a.region}`}
         </p>
 
         <div className="step-in mt-3 flex flex-col gap-5">
@@ -1184,7 +1330,7 @@ function Results({
             <Mascot mood={VERDICT_MOOD[result.verdict]} size={72} className="shrink-0" />
             <div>
               <p className="font-display text-2xl font-semibold leading-tight sm:text-[1.9rem]">
-                {verdict.badge}
+                {verdictBadge}
               </p>
               <p className="mt-1.5 text-sm opacity-80">{verdictSummary}</p>
             </div>
@@ -1216,7 +1362,10 @@ function Results({
                 type="button"
                 role="tab"
                 aria-selected={tab === t.id}
-                onClick={() => setTab(t.id)}
+                onClick={() => {
+                  track("tab_switched", { tab: t.id });
+                  setTab(t.id);
+                }}
                 className={`flex-1 rounded-full px-2 py-2 text-sm font-semibold transition sm:px-4 ${
                   tab === t.id ? "bg-[#b25c72] text-white shadow-sm" : "text-zinc-500 hover:text-zinc-800"
                 }`}
@@ -1253,7 +1402,10 @@ function Results({
                         <button
                           key={s.key}
                           type="button"
-                          onClick={s.apply}
+                          onClick={() => {
+                            track("whatif_applied", { what: s.key });
+                            s.apply();
+                          }}
                           className="flex items-center gap-4 rounded-2xl border border-zinc-200 p-4 text-left transition hover:border-[#b25c72] hover:bg-[#b25c72]/5"
                         >
                           <span className="text-2xl">{s.emoji}</span>
@@ -1519,7 +1671,7 @@ function Results({
 
             <div className="mt-5">
               <div className="flex items-center justify-between text-xs text-white/70">
-                <span>{buying ? `Of ${a.city} owned outright` : `If you ever want to buy in ${a.region}`}</span>
+                <span>{buying ? `Of ${a.city} owned outright` : `If you ever want to buy in ${a.id === CUSTOM_AREA_ID ? a.city : a.region}`}</span>
                 <span>
                   {Math.round(milestone.depositPct * 100)}% of{" "}
                   {fmt(buying ? result.deposit * 5 : result.depositTarget, cur)}
@@ -1730,8 +1882,9 @@ function CompareCard({
         </div>
         <p className="mt-1 text-xs text-zinc-400">
           {scope === "nearby"
-            ? `Your exact plan in the places around ${current.area.region} — tap one to move your whole scenario there.`
+            ? `Your exact plan in the places around ${current.area.id === CUSTOM_AREA_ID ? current.area.city : current.area.region} — tap one to move your whole scenario there.`
             : "Your exact plan in other countries — tap one to move your whole scenario there."}
+          <span className="sm:hidden"> Figures in {listCur}.</span>
         </p>
 
         <div className="mt-4 flex items-center px-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
@@ -1753,7 +1906,7 @@ function CompareCard({
                   type="button"
                   onClick={() => onPickArea(c.area)}
                   disabled={isCurrent}
-                  className={`flex w-full items-center rounded-xl px-1 py-3 text-left text-sm transition ${
+                  className={`flex w-full flex-wrap items-center rounded-xl px-1 py-3 text-left text-sm transition ${
                     isCurrent ? "cursor-default" : "hover:bg-zinc-50"
                   }`}
                 >
@@ -1785,9 +1938,19 @@ function CompareCard({
                   <span className="hidden w-24 text-right tabular-nums text-zinc-500 md:block">
                     {buying ? fmtYears(c.years) : fmt(c.upfront, listCur)}
                   </span>
-                  <span className="flex w-24 items-center justify-end gap-1.5">
+                  <span className="hidden w-24 items-center justify-end gap-1.5 sm:flex">
                     <span className={`h-2 w-2 shrink-0 rounded-full ${v.dot}`} />
                     <span className="text-xs text-zinc-500">{VERDICT_LABEL[c.verdict]}</span>
+                  </span>
+                  {/* Phones don't get columns — they get a detail line, not hidden data. */}
+                  <span className="mt-1 flex basis-full items-center justify-between pl-7 text-xs text-zinc-400 sm:hidden">
+                    <span className="tabular-nums">
+                      rent {fmt(c.rent, listCur)} · {buying ? `buy in ${fmtYears(c.years)}` : `upfront ${fmt(c.upfront, listCur)}`}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${v.dot}`} />
+                      {VERDICT_LABEL[c.verdict]}
+                    </span>
                   </span>
                 </button>
               </li>
@@ -1939,6 +2102,8 @@ function Step({
   onBack,
   onNext,
   nextLabel = "Continue",
+  nextDisabled = false,
+  nextHint,
 }: {
   title: string;
   subtitle?: string;
@@ -1946,6 +2111,8 @@ function Step({
   onBack: () => void;
   onNext: () => void;
   nextLabel?: string;
+  nextDisabled?: boolean;
+  nextHint?: string;
 }) {
   return (
     <div className="step-in">
@@ -1956,12 +2123,16 @@ function Step({
         <button onClick={onBack} className="rounded-xl px-4 py-2.5 text-sm font-medium text-zinc-500 hover:bg-zinc-100">
           ← Back
         </button>
-        <button
-          onClick={onNext}
-          className="rounded-xl bg-[#b25c72] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#9c4a60]"
-        >
-          {nextLabel}
-        </button>
+        <div className="flex items-center gap-3">
+          {nextDisabled && nextHint && <span className="text-xs text-zinc-400">{nextHint}</span>}
+          <button
+            onClick={onNext}
+            disabled={nextDisabled}
+            className="rounded-xl bg-[#b25c72] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#9c4a60] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {nextLabel}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -2319,6 +2490,100 @@ function Journey({
   );
 }
 
+// The "can't find your suburb?" escape hatch on the area step — name your spot,
+// type the one number that matters (rent or price), and the sim fills in the
+// rest from your country's medians. Remounted (via key) on country/housing
+// change so the field never silently means a different currency or thing.
+function CustomSpotBox({
+  active,
+  housing,
+  currency,
+  spot,
+  onUse,
+}: {
+  active: boolean;
+  housing: Housing;
+  currency: string;
+  spot: CustomAreaInput | null;
+  onUse: (spot: CustomAreaInput) => void;
+}) {
+  const buying = housing === "buy";
+  const [city, setCity] = useState(spot?.city ?? "");
+  const [amount, setAmount] = useState(() => {
+    const v = buying ? spot?.medianHouse : spot?.weeklyRent2br;
+    return v ? String(v) : "";
+  });
+
+  const n = Number(amount);
+  const valid = Number.isFinite(n) && n > 0;
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!valid) return;
+    onUse({
+      ...(spot ?? {}),
+      city: city.trim(),
+      ...(buying ? { medianHouse: n } : { weeklyRent2br: n }),
+    });
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      className={`mt-4 rounded-2xl border p-4 transition ${
+        active ? "border-[#b25c72] bg-[#b25c72]/10" : "border-dashed border-zinc-300 bg-zinc-50"
+      }`}
+    >
+      <p className="text-sm font-medium text-zinc-700">
+        {active ? "Using your own numbers ✓" : "Can’t find your spot?"}
+      </p>
+      <p className="mt-0.5 text-xs text-zinc-400">
+        {buying
+          ? `Type a typical home price there (${currency}) and we’ll take it from here.`
+          : `Type the weekly rent for a 2-bedroom there (${currency}) and we’ll take it from here.`}
+      </p>
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        <input
+          type="text"
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          placeholder="Your town or suburb"
+          aria-label="Your town or suburb"
+          className="min-w-0 flex-1 rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm focus:border-[#b25c72] focus:outline-none focus:ring-2 focus:ring-[#b25c72]/30"
+        />
+        <div className="relative flex-1">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400">
+            {currencySymbol(currency)}
+          </span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder={buying ? "home price" : "rent / week"}
+            aria-label={buying ? `Typical home price in ${currency}` : `Weekly rent for a 2-bedroom in ${currency}`}
+            className="w-full rounded-xl border border-zinc-300 bg-white py-2.5 pl-8 pr-3 text-sm focus:border-[#b25c72] focus:outline-none focus:ring-2 focus:ring-[#b25c72]/30"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={!valid}
+          className="shrink-0 rounded-xl bg-[#b25c72] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-105 disabled:opacity-50"
+        >
+          {active ? "Update" : "Use these"}
+        </button>
+      </div>
+      {active && (
+        <p className="mt-2 text-xs text-zinc-400">
+          Everyday living costs assume a typical spot in this country — your rent is exact, the rest
+          is indicative.
+        </p>
+      )}
+    </form>
+  );
+}
+
 function currencySymbol(cur: string) {
   const parts = new Intl.NumberFormat("en-AU", {
     style: "currency",
@@ -2389,6 +2654,7 @@ function EarnCard({
   who,
   value,
   onValue,
+  placeholder,
   currency,
   onCurrency,
   aud,
@@ -2398,6 +2664,7 @@ function EarnCard({
   who: string;
   value: number;
   onValue: (n: number) => void;
+  placeholder?: string;
   currency: string;
   onCurrency: (c: string) => void;
   aud: number;
@@ -2419,8 +2686,9 @@ function EarnCard({
         <NumberInput
           value={value}
           onValue={onValue}
+          placeholder={placeholder}
           ariaLabel={`${who} take-home pay`}
-          className="min-w-0 flex-1 rounded-xl border border-zinc-300 px-3.5 py-3 font-display text-xl font-semibold tabular-nums focus:border-[#b25c72] focus:outline-none focus:ring-2 focus:ring-[#b25c72]/30"
+          className="min-w-0 flex-1 rounded-xl border border-zinc-300 px-3.5 py-3 font-display text-xl font-semibold tabular-nums placeholder:font-sans placeholder:text-base placeholder:font-normal placeholder:text-zinc-300 focus:border-[#b25c72] focus:outline-none focus:ring-2 focus:ring-[#b25c72]/30"
         />
         <select
           value={currency}
@@ -2546,7 +2814,7 @@ function Stepper({
 function IntakeShell({ step, children }: { step: number; children: React.ReactNode }) {
   const meta = INTAKE_META[step - 1] ?? INTAKE_META[0];
   return (
-    <main className="flex min-h-[100svh] flex-1 flex-col lg:flex-row">
+    <main id="main" className="flex min-h-[100svh] flex-1 flex-col lg:flex-row">
       {/* Rail — desktop */}
       <aside className="hidden bg-gradient-to-b from-[#3b2a40] to-[#5a3f54] px-10 py-11 text-white lg:flex lg:w-[420px] lg:flex-none lg:flex-col">
         <Link href="/" className="mb-9 flex items-center gap-2 text-[#f3c9d4]" title="Back to the journal">
