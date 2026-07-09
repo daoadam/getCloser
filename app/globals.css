@@ -24,6 +24,26 @@ body {
   letter-spacing: -0.01em;
 }
 
+/* Skip-to-content: visually hidden until keyboard focus, then drops in above
+   the sticky top bars (which sit at z-10). */
+.skip-link {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 50;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: #b25c72;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  transform: translateY(-250%);
+  transition: transform 0.2s ease;
+}
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
 @keyframes stepIn {
   from {
     opacity: 0;
@@ -522,9 +542,33 @@ input[type="range"]::-moz-range-thumb {
 [data-theme="dark"] .text-\[\#a89aa2\],
 [data-theme="dark"] .text-\[\#b3a89f\],
 [data-theme="dark"] .text-\[\#a89a8f\] { color: #98878f; }
-[data-theme="dark"] .text-zinc-600 { color: #c2b4bb; }
-[data-theme="dark"] .hover\:bg-zinc-100:hover { background-color: #2a2026; }
+/* the zinc scale (the calculator speaks zinc, the rest of the site speaks
+   arbitrary hexes) — dark ink flips light, light grounds flip dark */
+[data-theme="dark"] .text-zinc-900,
+[data-theme="dark"] .text-zinc-800,
+[data-theme="dark"] .hover\:text-zinc-800:hover { color: #f1e7ec; }
+[data-theme="dark"] .text-zinc-700,
+[data-theme="dark"] .hover\:text-zinc-700:hover,
+[data-theme="dark"] .disabled\:hover\:text-zinc-700:hover:disabled { color: #e4d8de; }
+[data-theme="dark"] .text-zinc-600,
+[data-theme="dark"] .hover\:text-zinc-600:hover { color: #c2b4bb; }
 [data-theme="dark"] .text-zinc-500 { color: #98878f; }
+[data-theme="dark"] .text-zinc-400 { color: #8d7c85; }
+[data-theme="dark"] .text-zinc-300 { color: #6b5a63; }
+[data-theme="dark"] .bg-zinc-50,
+[data-theme="dark"] .bg-zinc-50\/60 { background-color: #241b20; }
+[data-theme="dark"] .hover\:bg-zinc-50:hover,
+[data-theme="dark"] .bg-zinc-100,
+[data-theme="dark"] .hover\:bg-zinc-100:hover { background-color: #2a2026; }
+[data-theme="dark"] .bg-zinc-200 { background-color: #3a2d34; }
+[data-theme="dark"] .bg-zinc-300 { background-color: #4d3a42; }
+[data-theme="dark"] .border-zinc-100,
+[data-theme="dark"] .border-zinc-200,
+[data-theme="dark"] .hover\:border-zinc-200:hover { border-color: #3a2d34; }
+[data-theme="dark"] .border-zinc-300,
+[data-theme="dark"] .hover\:border-zinc-300:hover,
+[data-theme="dark"] .disabled\:hover\:border-zinc-300:hover:disabled { border-color: #4d3a42; }
+[data-theme="dark"] .divide-zinc-100 > :not([hidden]) ~ :not([hidden]) { border-color: #3a2d34; }
 
 /* the rose, brightened for dark contrast (bg-[#b25c72] buttons stay as-is) */
 [data-theme="dark"] .text-\[\#b25c72\] { color: #e094a8; }

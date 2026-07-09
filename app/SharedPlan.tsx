@@ -188,7 +188,7 @@ export default function SharedPlan({
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-5 py-8 sm:px-8 sm:py-10">
+      <main id="main" className="mx-auto max-w-4xl px-5 py-8 sm:px-8 sm:py-10">
         {/* hero */}
         <section className="relative text-center">
           <div className="pointer-events-none absolute inset-x-0 -top-5 h-40 bg-[radial-gradient(70%_80%_at_50%_0%,rgba(178,92,114,0.10),transparent_60%)]" />

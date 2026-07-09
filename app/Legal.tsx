@@ -257,7 +257,7 @@ export default function Legal({
     document.getElementById(`sec-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   return (
-    <main className="min-h-full bg-[#faf6f1] pb-20">
+    <main id="main" className="min-h-full bg-[#faf6f1] pb-20">
       {/* ── Top bar ─────────────────────────────────────────── */}
       <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#efe8df] bg-white/90 px-5 py-3.5 backdrop-blur sm:px-14">
         <button onClick={onBack} className="flex items-center gap-2" aria-label="Close the Distance home">

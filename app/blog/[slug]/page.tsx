@@ -133,22 +133,39 @@ export default async function BlogPostPage({
   if (!post) notFound();
   const related = relatedPosts(post);
 
-  // Article structured data — tells search engines who wrote what, when.
+  // Article + breadcrumb structured data — tells search engines who wrote
+  // what, when, and where the post sits in the site (Journal → post).
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    headline: post.title,
-    description: post.excerpt,
-    datePublished: post.date || undefined,
-    author: { "@type": "Person", name: post.author },
-    publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
-    keywords: post.tags.join(", "),
-    url: `${SITE_URL}/blog/${post.slug}`,
-    mainEntityOfPage: `${SITE_URL}/blog/${post.slug}`,
+    "@graph": [
+      {
+        "@type": "BlogPosting",
+        headline: post.title,
+        description: post.excerpt,
+        datePublished: post.date || undefined,
+        author: { "@type": "Person", name: post.author },
+        publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+        keywords: post.tags.join(", "),
+        url: `${SITE_URL}/blog/${post.slug}`,
+        mainEntityOfPage: `${SITE_URL}/blog/${post.slug}`,
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Journal", item: SITE_URL },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: post.title,
+            item: `${SITE_URL}/blog/${post.slug}`,
+          },
+        ],
+      },
+    ],
   };
 
   return (
-    <main className="min-h-full bg-[#faf6f1] pb-20">
+    <main id="main" className="min-h-full bg-[#faf6f1] pb-20">
       <script
         type="application/ld+json"
         // Escape "<" so post titles can never close the script tag early.
@@ -167,9 +184,17 @@ export default async function BlogPostPage({
           <ThemeToggle />
           <Link
             href="/"
-            className="rounded-xl border border-[#ddd5cb] bg-white px-4 py-2 text-[13.5px] font-semibold text-[#3f3a40] transition hover:bg-[#faf6f1]"
+            className="hidden rounded-xl border border-[#ddd5cb] bg-white px-4 py-2 text-[13.5px] font-semibold text-[#3f3a40] transition hover:bg-[#faf6f1] sm:inline-block"
           >
             ← All posts
+          </Link>
+          {/* the product CTA never leaves the reader's screen — the logo
+              already covers "back home" on mobile */}
+          <Link
+            href="/calculator"
+            className="rounded-xl bg-[#b25c72] px-4 py-2 text-[13.5px] font-semibold text-white transition hover:brightness-105"
+          >
+            Try the calculator →
           </Link>
         </div>
       </div>

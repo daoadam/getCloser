@@ -5,7 +5,7 @@ import Mascot from "./Mascot";
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-full flex-1 flex-col items-center justify-center bg-[#faf6f1] px-6 py-24 text-center">
+    <main id="main" className="flex min-h-full flex-1 flex-col items-center justify-center bg-[#faf6f1] px-6 py-24 text-center">
       <Mascot mood="worry" size={110} />
       <h1 className="mt-6 font-display text-[40px] font-semibold tracking-[-0.02em] text-[#2b2329]">
         404 — this page is long distance

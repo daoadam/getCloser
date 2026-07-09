@@ -390,6 +390,39 @@ export function getArea(id: string): Area | undefined {
   return AREAS.find((a) => a.id === id);
 }
 
+// The "can't find your suburb" escape hatch — the user types their own rent
+// (or home price) and we synthesise an Area from their country's medians for
+// everything else, so the whole sim still works.
+export const CUSTOM_AREA_ID = "custom";
+
+export type CustomAreaInput = {
+  city?: string;
+  weeklyRent2br?: number;
+  medianHouse?: number;
+};
+
+function median(xs: number[]): number {
+  const s = [...xs].sort((a, b) => a - b);
+  return s[Math.floor(s.length / 2)] ?? 0;
+}
+
+export function customAreaFor(country: string, input: CustomAreaInput): Area {
+  const list = AREAS_BY_COUNTRY[country] ?? [];
+  return {
+    id: CUSTOM_AREA_ID,
+    city: input.city?.trim() || "Your area",
+    region: "Your own numbers",
+    country,
+    currency: list[0]?.currency ?? "AUD",
+    weeklyRent2br: input.weeklyRent2br || median(list.map((a) => a.weeklyRent2br)),
+    medianHouse: input.medianHouse || median(list.map((a) => a.medianHouse)),
+    colIndex: median(list.map((a) => a.colIndex)) || 1,
+    // Country centroid — keeps "places nearby" sensible without a real pin.
+    lat: list.reduce((s, a) => s + a.lat, 0) / (list.length || 1),
+    lng: list.reduce((s, a) => s + a.lng, 0) / (list.length || 1),
+  };
+}
+
 export const AREAS_BY_COUNTRY: Record<string, Area[]> = AREAS.reduce<Record<string, Area[]>>((acc, a) => {
   (acc[a.country] ??= []).push(a);
   return acc;
